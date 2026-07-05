@@ -4,8 +4,23 @@
 
 - Project folder: `C:\Users\USER\Documents\drag_racing`
 - Project name: `drag_racing`
+- GitHub repository: `https://github.com/pjhm0730/drag_racing_MVP`
+- Current branch: `main`
+- Latest pushed commit: `4cbe0fa Simplify car numbers and enhance race feel`
 - Current version is a local static MVP, not a real multiplayer game.
 - The app can run by opening `index.html` directly, or by serving the folder with a static server.
+
+## Latest Update - 2026-07-06
+
+- Simplified the visible numbering system so users only see fixed car numbers: `Car #1` through `Car #10`.
+- Kept `selectedOrder` only as internal selection tracking for lane assignment; pick order is no longer shown in Lobby, Launch, Race HUD, Canvas, or Result.
+- Reworded UI labels away from pick-order language and toward car identity language such as `Car #5` and `5번 자동차`.
+- Reworked the Race screen for mobile landscape with a compact `100dvw x 100dvh` layout.
+- Made the race canvas resize to the stage size and device pixel ratio instead of relying on a fixed CSS canvas size.
+- Tuned lane height and compact HUD behavior so 2 to 10 cars fit in landscape view.
+- Added moving road grid, road stripes, track markers, speed lines, exhaust trails, stronger boost glow, `BOOST` HUD state, surge pulses, improved car rendering, headlights, tires, shadows, and a checkered finish line.
+- Confirmed the last-place car remains the drink buyer.
+- Changes were committed and pushed to GitHub on `main`.
 
 ## Implemented
 
