@@ -42,8 +42,8 @@ const DEFAULT_STATE = {
   playerCount: 6,
   players: Array.from({ length: 10 }, (_, index) => ({
     id: `player-${index + 1}`,
-    slot: index + 1,
-    name: `${index + 1}번 레이서`,
+    carNo: index + 1,
+    name: `${index + 1}번 자동차`,
     selectedOrder: null,
     reactionMs: 0,
     finishTime: null,
@@ -70,11 +70,15 @@ function visiblePlayers() {
 }
 
 function colorFor(player) {
-  return PLAYER_COLORS[player.slot - 1] ?? "#94a3b8";
+  return PLAYER_COLORS[player.carNo - 1] ?? "#94a3b8";
 }
 
-function randomName(slot) {
-  const left = NICKNAME_PARTS[(slot + Math.floor(Math.random() * NICKNAME_PARTS.length)) % NICKNAME_PARTS.length];
+function carHash(player) {
+  return `Car #${player.carNo}`;
+}
+
+function randomName(carNo) {
+  const left = NICKNAME_PARTS[(carNo + Math.floor(Math.random() * NICKNAME_PARTS.length)) % NICKNAME_PARTS.length];
   const right = NICKNAME_ENDINGS[Math.floor(Math.random() * NICKNAME_ENDINGS.length)];
   return `${left} ${right}`;
 }
@@ -83,12 +87,6 @@ function setScreen(screen) {
   state.screen = screen;
   cancelRaceLoop();
   render();
-}
-
-function resetSelections() {
-  state.players.forEach((player) => {
-    player.selectedOrder = null;
-  });
 }
 
 function normalizeSelectionOrder() {
@@ -131,13 +129,13 @@ function updatePlayerName(playerId, name) {
 function rerollPlayerName(playerId) {
   const player = state.players.find((candidate) => candidate.id === playerId);
   if (!player) return;
-  player.name = randomName(player.slot);
+  player.name = randomName(player.carNo);
   render();
 }
 
 function rerollVisibleNames() {
   visiblePlayers().forEach((player) => {
-    player.name = randomName(player.slot);
+    player.name = randomName(player.carNo);
   });
   render();
 }
@@ -146,11 +144,16 @@ function prepareRace() {
   const racers = selectedPlayers().map((player, index) => ({
     ...player,
     lane: index,
-    reactionMs: Math.round(180 + Math.random() * 620),
-    acceleration: 0.0000019 + Math.random() * 0.0000012,
-    maxSpeed: 0.00062 + Math.random() * 0.00018,
-    nitroAt: 0.38 + Math.random() * 0.28,
+    reactionMs: Math.round(150 + Math.random() * 560),
+    acceleration: 0.000000016 + Math.random() * 0.000000015,
+    maxSpeed: 0.000116 + Math.random() * 0.000037,
+    nitroAt: 0.34 + Math.random() * 0.34,
     nitroUsed: false,
+    boostStartedAt: null,
+    boostEndsAt: null,
+    boostLabelUntil: null,
+    surgePhase: Math.random() * Math.PI * 2,
+    surgeRate: 0.0012 + Math.random() * 0.0009,
     progress: 0,
     speed: 0,
     finishTime: null,
@@ -161,6 +164,8 @@ function prepareRace() {
     status: "ready",
     startedAt: null,
     countdownStartedAt: null,
+    lastFrameAt: null,
+    elapsedMs: 0,
     racers,
     ranking: [],
     drinkBuyerId: null,
@@ -177,10 +182,12 @@ function startCountdown() {
   setScreen("race");
 }
 
-function startRaceNow() {
+function startRaceNow(now = performance.now()) {
   if (!state.race) return;
   state.race.status = "running";
-  state.race.startedAt = performance.now();
+  state.race.startedAt = now;
+  state.race.lastFrameAt = now;
+  state.race.elapsedMs = 0;
   state.race.ranking = [];
   requestRaceFrame();
 }
@@ -219,12 +226,15 @@ function tickRace(now) {
 
   if (race.status === "countdown") {
     const elapsed = now - race.countdownStartedAt;
-    drawRaceCanvas();
+    race.elapsedMs = elapsed;
+    drawRaceCanvas(now);
     renderRaceHud();
+
     if (elapsed >= 3000) {
-      startRaceNow();
+      startRaceNow(now);
       return;
     }
+
     animationFrameId = requestAnimationFrame(tickRace);
     return;
   }
@@ -232,22 +242,35 @@ function tickRace(now) {
   if (race.status !== "running" || race.startedAt === null) return;
 
   const elapsed = now - race.startedAt;
-  const allFinished = race.racers.every((racer) => racer.finished);
+  const frameMs = Math.min(34, Math.max(12, now - (race.lastFrameAt ?? now)));
+  race.elapsedMs = elapsed;
+  race.lastFrameAt = now;
 
   race.racers.forEach((racer) => {
     if (racer.finished) return;
 
     if (elapsed < racer.reactionMs) {
-      racer.speed = 0;
+      racer.speed *= 0.84;
       return;
     }
 
-    const racingMs = elapsed - racer.reactionMs;
-    const gripPulse = 0.00000022 * Math.sin((elapsed + racer.slot * 190) / 180);
-    const nitro = !racer.nitroUsed && racer.progress >= racer.nitroAt ? 0.0003 : 0;
-    racer.nitroUsed = racer.nitroUsed || nitro > 0;
-    racer.speed = Math.min(racer.maxSpeed + nitro, racer.speed + racer.acceleration * racingMs + gripPulse);
-    racer.progress = Math.min(1, racer.progress + racer.speed * 16.7);
+    if (!racer.nitroUsed && racer.progress >= racer.nitroAt) {
+      racer.nitroUsed = true;
+      racer.boostStartedAt = elapsed;
+      racer.boostEndsAt = elapsed + 850 + Math.random() * 560;
+      racer.boostLabelUntil = elapsed + 900;
+      racer.speed += 0.000045;
+    }
+
+    const boostActive = racer.boostEndsAt !== null && elapsed <= racer.boostEndsAt;
+    const middleRaceSurge = racer.progress > 0.18 && racer.progress < 0.88;
+    const surgeWave = middleRaceSurge ? Math.sin(elapsed * racer.surgeRate + racer.surgePhase) * 0.000012 : 0;
+    const tractionNoise = Math.sin(elapsed * 0.0034 + racer.carNo * 1.7) * 0.000004;
+    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + (boostActive ? 0.000075 : 0);
+
+    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.000076), racer.speed + racer.acceleration * frameMs);
+    racer.speed *= boostActive ? 0.999 : 0.994;
+    racer.progress = Math.min(1, racer.progress + racer.speed * frameMs);
 
     if (racer.progress >= 1) {
       racer.finished = true;
@@ -256,10 +279,11 @@ function tickRace(now) {
     }
   });
 
-  drawRaceCanvas();
+  drawRaceCanvas(now);
   renderRaceHud();
 
-  if (allFinished || elapsed > 16000) {
+  const allFinished = race.racers.every((racer) => racer.finished);
+  if (allFinished || elapsed > 17000) {
     race.racers.forEach((racer) => {
       if (racer.finishTime === null) {
         racer.finishTime = elapsed / 1000 + (1 - racer.progress);
@@ -296,15 +320,15 @@ function renderHome() {
       <section class="hero">
         <p class="eyebrow">Office Drink Bet Game</p>
         <h1>Drag Racing</h1>
-        <p class="hero-copy">로비에서 참가자를 고르고, 짧은 드래그 레이스로 오늘 음료수 담당을 정합니다.</p>
+        <p class="hero-copy">자동차를 고르고, 짧은 400m 레이스로 오늘 음료수 담당을 정합니다.</p>
         <div class="button-row">
           <button class="primary-button" data-action="go-lobby">로비 만들기</button>
-          <button class="ghost-button" data-action="quick-start">6명 빠른 시작</button>
+          <button class="ghost-button" data-action="quick-start">6대 빠른 시작</button>
         </div>
       </section>
       <section class="feature-strip" aria-label="게임 흐름">
-        <div><strong>1</strong><span>참가자 선택</span></div>
-        <div><strong>2</strong><span>런치 대기</span></div>
+        <div><strong>1</strong><span>자동차 선택</span></div>
+        <div><strong>2</strong><span>출발 준비</span></div>
         <div><strong>3</strong><span>400m 레이스</span></div>
         <div><strong>4</strong><span>음료수 담당 발표</span></div>
       </section>
@@ -324,23 +348,23 @@ function renderHome() {
 function renderLobby() {
   const selected = selectedPlayers();
   app.innerHTML = html`
-    <main class="page-layout">
+    <main class="page-layout lobby-layout">
       <header class="top-bar">
         <button class="icon-button" data-action="home" aria-label="홈으로">←</button>
         <div>
           <p class="eyebrow">Mock Lobby</p>
-          <h1>참가자 선택</h1>
+          <h1>자동차 선택</h1>
         </div>
         <button class="ghost-button compact" data-action="random-all">이름 다시 뽑기</button>
       </header>
 
       <section class="lobby-controls" aria-label="로비 설정">
-        <div class="segmented-control" role="group" aria-label="참가자 수">
+        <div class="segmented-control" role="group" aria-label="자동차 수">
           ${[2, 4, 6, 8, 10]
             .map(
               (count) => html`
                 <button class="${state.playerCount === count ? "active" : ""}" data-count="${count}">
-                  ${count}명
+                  ${count}대
                 </button>
               `,
             )
@@ -348,18 +372,18 @@ function renderLobby() {
         </div>
         <div class="selection-summary">
           <strong>${selected.length}</strong>
-          <span>명 선택됨</span>
+          <span>대 참가</span>
         </div>
       </section>
 
-      <section class="player-grid" aria-label="참가자 목록">
+      <section class="player-grid" aria-label="자동차 목록">
         ${visiblePlayers().map(renderPlayerCard).join("")}
       </section>
 
       <footer class="bottom-action">
         <div>
-          <strong>선택 순서</strong>
-          <span>${selected.length > 0 ? selected.map((player) => `${player.selectedOrder}. ${player.name}`).join(" · ") : "카드를 눌러 참가자를 선택하세요"}</span>
+          <strong>참가 자동차</strong>
+          <span>${selected.length > 0 ? selected.map((player) => `${carHash(player)} ${escapeHtml(player.name)}`).join(" · ") : "카드를 눌러 참가할 자동차를 고르세요"}</span>
         </div>
         <button class="primary-button" data-action="prepare" ${selected.length < 2 ? "disabled" : ""}>
           레이스 준비
@@ -393,11 +417,13 @@ function renderPlayerCard(player) {
   return html`
     <article class="player-card ${selected ? "selected" : ""}" data-player-card="${player.id}" style="--player-color: ${colorFor(player)}">
       <div class="player-card-header">
-        <span class="slot-badge">${player.slot}</span>
-        <span class="selection-badge">${selected ? `${player.selectedOrder}번 선택` : "대기"}</span>
+        <span class="slot-badge">${carHash(player)}</span>
+        <span class="selection-badge">${selected ? "참가" : "대기"}</span>
       </div>
       <div class="car-preview" aria-hidden="true">
         <span class="car-body"></span>
+        <span class="car-window"></span>
+        <span class="car-light"></span>
         <span class="car-wheel front"></span>
         <span class="car-wheel rear"></span>
       </div>
@@ -418,9 +444,9 @@ function renderLaunch() {
         <button class="icon-button" data-action="back-lobby" aria-label="로비로">←</button>
         <div>
           <p class="eyebrow">Launch</p>
-          <h1>출발선 정렬</h1>
+          <h1>출발 준비</h1>
         </div>
-        <button class="ghost-button compact" data-action="reshuffle">레이스 다시 섞기</button>
+        <button class="ghost-button compact" data-action="reshuffle">컨디션 다시 뽑기</button>
       </header>
 
       <section class="launch-grid">
@@ -428,9 +454,9 @@ function renderLaunch() {
           .map(
             (racer) => html`
               <article class="lane-card" style="--player-color: ${colorFor(racer)}">
-                <span>${racer.selectedOrder}번 그리드</span>
-                <strong>${racer.name}</strong>
-                <small>반응속도 예상 ${racer.reactionMs || Math.round(200 + Math.random() * 500)}ms</small>
+                <span>${carHash(racer)}</span>
+                <strong>${escapeHtml(racer.name)}</strong>
+                <small>반응속도 예상 ${racer.reactionMs || Math.round(180 + Math.random() * 520)}ms</small>
               </article>
             `,
           )
@@ -438,7 +464,7 @@ function renderLaunch() {
       </section>
 
       <section class="start-panel">
-        <p>선택된 순서대로 레인이 배정됩니다. 마지막으로 들어오는 사람이 오늘 음료수 담당입니다.</p>
+        <p>참가 자동차가 출발선에 섰습니다. 마지막으로 들어오는 자동차가 오늘 음료수 담당입니다.</p>
         <button class="primary-button jumbo" data-action="start-countdown">카운트다운 시작</button>
       </section>
     </main>
@@ -456,12 +482,13 @@ function renderRace() {
       <header class="race-header">
         <div>
           <p class="eyebrow">Race</p>
-          <h1>400m 드래그 레이스</h1>
+          <h1>400m Drag</h1>
         </div>
+        <p class="race-rule">마지막 도착 자동차가 음료수 담당</p>
         <button class="ghost-button compact" data-action="abort">로비로</button>
       </header>
       <section class="race-stage">
-        <canvas id="raceCanvas" width="1280" height="720" aria-label="드래그 레이싱 트랙"></canvas>
+        <canvas id="raceCanvas" aria-label="드래그 레이싱 트랙"></canvas>
         <div id="countdown" class="countdown"></div>
       </section>
       <aside id="raceHud" class="race-hud" aria-label="레이스 현황"></aside>
@@ -485,62 +512,82 @@ function renderRaceHud() {
     if (a.finished !== b.finished) return Number(b.finished) - Number(a.finished);
     return b.progress - a.progress;
   });
+  const leader = racers[0];
+  const last = racers[racers.length - 1];
 
   hud.innerHTML = racers
-    .map(
-      (racer, index) => html`
-        <div class="hud-row" style="--player-color: ${colorFor(racer)}">
-          <span class="rank">${index + 1}</span>
+    .map((racer) => {
+      const status = racer.id === leader?.id ? "선두" : racer.id === last?.id ? "후미" : "추격";
+      const boostActive = state.race.elapsedMs && racer.boostEndsAt !== null && state.race.elapsedMs <= racer.boostEndsAt;
+      return html`
+        <div class="hud-row ${boostActive ? "boosting" : ""}" style="--player-color: ${colorFor(racer)}">
+          <span class="rank">${carHash(racer)}</span>
           <strong>${escapeHtml(racer.name)}</strong>
+          <small>${status}</small>
           <div class="hud-progress"><span style="width: ${Math.round(racer.progress * 100)}%"></span></div>
-          <small>${racer.finishTime ? `${racer.finishTime.toFixed(2)}s` : `${Math.round(racer.progress * 400)}m`}</small>
+          <em>${boostActive ? "BOOST" : racer.finishTime ? `${racer.finishTime.toFixed(2)}s` : `${Math.round(racer.progress * 400)}m`}</em>
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 }
 
-function drawRaceCanvas() {
+function resizeRaceCanvas(canvas) {
+  const stage = canvas.parentElement;
+  const rect = stage.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(360, Math.floor(rect.width));
+  const height = Math.max(220, Math.floor(rect.height));
+
+  if (canvas.width !== Math.floor(width * dpr) || canvas.height !== Math.floor(height * dpr)) {
+    canvas.width = Math.floor(width * dpr);
+    canvas.height = Math.floor(height * dpr);
+  }
+
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, width, height };
+}
+
+function drawRaceCanvas(now = performance.now()) {
   const canvas = document.querySelector("#raceCanvas");
   const countdown = document.querySelector("#countdown");
   if (!canvas || !state.race) return;
 
-  const ctx = canvas.getContext("2d");
-  const width = canvas.width;
-  const height = canvas.height;
-  const racers = state.race.racers;
-  const laneHeight = Math.min(84, (height - 140) / racers.length);
-  const top = (height - laneHeight * racers.length) / 2 + 34;
-  const startX = 120;
-  const finishX = width - 122;
+  const { ctx, width, height } = resizeRaceCanvas(canvas);
+  const race = state.race;
+  const racers = race.racers;
+  const activeElapsed = race.status === "running" ? race.elapsedMs : Math.max(0, now - (race.countdownStartedAt ?? now));
+  const roadOffset = race.status === "running" ? activeElapsed * 0.7 : activeElapsed * 0.04;
+  const horizontalPadding = Math.max(42, width * 0.055);
+  const startX = horizontalPadding + 34;
+  const finishX = width - horizontalPadding;
+  const labelWidth = Math.min(142, Math.max(82, width * 0.14));
+  const trackTop = Math.max(42, height * 0.1);
+  const trackBottom = height - Math.max(22, height * 0.05);
+  const trackHeight = Math.max(170, trackBottom - trackTop);
+  const laneHeight = Math.max(18, Math.min(66, trackHeight / racers.length));
+  const usedHeight = laneHeight * racers.length;
+  const top = trackTop + Math.max(0, (trackHeight - usedHeight) / 2);
 
   ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = "#121826";
-  ctx.fillRect(0, 0, width, height);
+  drawRaceBackground(ctx, width, height, roadOffset, race.status);
 
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#1f2937");
-  gradient.addColorStop(0.52, "#111827");
-  gradient.addColorStop(1, "#0f172a");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(36, 42, width - 72, height - 84);
-
-  ctx.fillStyle = "rgba(248, 250, 252, 0.88)";
-  ctx.font = "700 30px system-ui";
-  ctx.fillText("DRAG STRIP 400m", 70, 78);
-  ctx.font = "600 18px system-ui";
-  ctx.fillText("오늘의 음료수 담당은 결승선을 가장 늦게 통과한 사람", 70, 108);
+  ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
+  ctx.font = `${Math.max(14, Math.min(24, height * 0.045))}px system-ui`;
+  ctx.textBaseline = "middle";
+  ctx.fillText("DRAG STRIP 400m", horizontalPadding, Math.max(24, trackTop - 22));
 
   racers.forEach((racer, index) => {
     const y = top + index * laneHeight;
-    drawLane(ctx, racer, index, y, laneHeight, startX, finishX);
+    drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth, roadOffset, race.elapsedMs);
   });
 
-  drawStartFinish(ctx, startX, top - 20, laneHeight * racers.length + 36, "START");
-  drawStartFinish(ctx, finishX, top - 20, laneHeight * racers.length + 36, "FINISH");
+  drawStartLine(ctx, startX, top - 8, usedHeight + 16);
+  drawFinishLine(ctx, finishX, top - 8, usedHeight + 16);
 
-  if (countdown && state.race.status === "countdown") {
-    const elapsed = performance.now() - state.race.countdownStartedAt;
+  if (countdown && race.status === "countdown") {
+    const elapsed = now - race.countdownStartedAt;
     const left = Math.max(0, 3 - Math.floor(elapsed / 1000));
     countdown.textContent = left > 0 ? String(left) : "GO";
   } else if (countdown) {
@@ -548,71 +595,224 @@ function drawRaceCanvas() {
   }
 }
 
-function drawLane(ctx, racer, index, y, laneHeight, startX, finishX) {
-  const laneCenter = y + laneHeight / 2;
-  const color = colorFor(racer);
-  const carX = startX + (finishX - startX) * racer.progress;
+function drawRaceBackground(ctx, width, height, offset, status) {
+  const gradient = ctx.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, "#18202d");
+  gradient.addColorStop(0.48, "#101722");
+  gradient.addColorStop(1, "#050915");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.045)" : "rgba(255,255,255,0.075)";
-  ctx.fillRect(58, y, 1164, laneHeight - 4);
+  ctx.fillStyle = "rgba(15, 23, 42, 0.84)";
+  ctx.fillRect(18, 28, width - 36, height - 48);
 
-  ctx.strokeStyle = "rgba(255,255,255,0.2)";
-  ctx.setLineDash([18, 18]);
-  ctx.beginPath();
-  ctx.moveTo(70, y + laneHeight - 4);
-  ctx.lineTo(1210, y + laneHeight - 4);
-  ctx.stroke();
-  ctx.setLineDash([]);
-
-  ctx.fillStyle = "rgba(226,232,240,0.85)";
-  ctx.font = "700 18px system-ui";
-  ctx.fillText(`${racer.selectedOrder}`, 74, laneCenter + 7);
-
-  ctx.fillStyle = "rgba(226,232,240,0.62)";
-  ctx.font = "600 15px system-ui";
-  ctx.fillText(racer.name, 104, laneCenter + 6);
-
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 16;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.roundRect(carX - 38, laneCenter - 16, 76, 30, 8);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  ctx.fillStyle = "rgba(15,23,42,0.9)";
-  ctx.beginPath();
-  ctx.roundRect(carX - 10, laneCenter - 27, 32, 20, 7);
-  ctx.fill();
-
-  ctx.fillStyle = "#020617";
-  ctx.beginPath();
-  ctx.arc(carX - 22, laneCenter + 16, 8, 0, Math.PI * 2);
-  ctx.arc(carX + 24, laneCenter + 16, 8, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (racer.speed > 0 && !racer.finished) {
-    ctx.strokeStyle = color;
-    ctx.globalAlpha = 0.6;
-    ctx.lineWidth = 4;
+  const gridOffset = offset % 58;
+  ctx.strokeStyle = status === "running" ? "rgba(148, 163, 184, 0.12)" : "rgba(148, 163, 184, 0.06)";
+  ctx.lineWidth = 1;
+  for (let x = -58 + gridOffset; x < width + 80; x += 58) {
     ctx.beginPath();
-    ctx.moveTo(carX - 44, laneCenter);
-    ctx.lineTo(carX - 80 - racer.speed * 48000, laneCenter);
+    ctx.moveTo(x, 28);
+    ctx.lineTo(x - 100, height - 20);
     ctx.stroke();
-    ctx.globalAlpha = 1;
+  }
+
+  const markerOffset = offset % 180;
+  for (let x = width + 80 - markerOffset; x > -120; x -= 180) {
+    ctx.fillStyle = "rgba(253, 186, 116, 0.22)";
+    ctx.fillRect(x, 40, 20, height - 78);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
+    ctx.beginPath();
+    ctx.arc(x + 10, 38, 5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  if (status === "running") {
+    ctx.strokeStyle = "rgba(248, 250, 252, 0.18)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 16; i += 1) {
+      const y = 58 + ((i * 47 + offset * 0.7) % Math.max(80, height - 100));
+      const x = width - ((i * 127 + offset * 1.8) % (width + 240));
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - 90 - (i % 4) * 22, y);
+      ctx.stroke();
+    }
   }
 }
 
-function drawStartFinish(ctx, x, y, height, label) {
-  ctx.fillStyle = "rgba(248,250,252,0.92)";
-  ctx.fillRect(x - 5, y, 10, height);
-  ctx.fillStyle = "#111827";
-  ctx.font = "800 13px system-ui";
+function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth, offset, elapsedMs) {
+  const laneCenter = y + laneHeight / 2;
+  const color = colorFor(racer);
+  const laneLeft = Math.max(18, startX - labelWidth);
+  const laneRight = finishX + 18;
+  const carX = startX + (finishX - startX) * racer.progress;
+  const boostActive = racer.boostEndsAt !== null && elapsedMs <= racer.boostEndsAt;
+  const boostAge = boostActive ? Math.max(0, elapsedMs - racer.boostStartedAt) : 0;
+  const boostPulse = boostActive ? Math.sin(boostAge / 36) * 2.4 : 0;
+  const carScale = boostActive ? 1.08 + Math.sin(boostAge / 48) * 0.05 : 1;
+  const compactLane = laneHeight < 34;
+
+  ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.052)" : "rgba(255,255,255,0.082)";
+  ctx.fillRect(laneLeft, y + 1, laneRight - laneLeft, laneHeight - 2);
+
+  const stripeOffset = offset % 76;
+  ctx.strokeStyle = "rgba(255,255,255,0.26)";
+  ctx.setLineDash([24, 24]);
+  ctx.lineDashOffset = -stripeOffset;
+  ctx.lineWidth = Math.max(1, laneHeight * 0.025);
+  ctx.beginPath();
+  ctx.moveTo(startX + 14, y + laneHeight - 2);
+  ctx.lineTo(finishX - 16, y + laneHeight - 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
+
+  ctx.fillStyle = "rgba(226,232,240,0.9)";
+  ctx.font = `800 ${Math.max(11, Math.min(16, laneHeight * 0.27))}px system-ui`;
+  ctx.textBaseline = "middle";
+  ctx.fillText(carHash(racer), laneLeft + 10, compactLane ? laneCenter : laneCenter - Math.min(9, laneHeight * 0.12));
+
+  if (!compactLane) {
+    ctx.fillStyle = "rgba(226,232,240,0.62)";
+    ctx.font = `600 ${Math.max(10, Math.min(14, laneHeight * 0.24))}px system-ui`;
+    ctx.fillText(trimCanvasText(racer.name, 13), laneLeft + 10, laneCenter + Math.min(11, laneHeight * 0.22));
+  }
+
+  if (racer.speed > 0 && !racer.finished) {
+    drawExhaust(ctx, carX, laneCenter, color, racer.speed, boostActive, boostPulse);
+  }
+
+  drawCar(ctx, carX + boostPulse, laneCenter, laneHeight, color, carScale, racer.carNo, boostActive);
+
+  if (racer.boostLabelUntil !== null && elapsedMs <= racer.boostLabelUntil) {
+    const labelAlpha = Math.max(0, (racer.boostLabelUntil - elapsedMs) / 900);
+    ctx.save();
+    ctx.globalAlpha = labelAlpha;
+    ctx.fillStyle = "#fdba74";
+    ctx.font = `900 ${Math.max(12, Math.min(22, laneHeight * 0.36))}px system-ui`;
+    ctx.fillText("BOOST!", Math.min(finishX - 86, carX + 46), laneCenter - laneHeight * 0.25);
+    ctx.restore();
+  }
+}
+
+function drawExhaust(ctx, carX, laneCenter, color, speed, boostActive, boostPulse) {
+  const trailLength = boostActive ? 120 + speed * 520000 : 42 + speed * 240000;
+  const flameHeight = boostActive ? 13 : 6;
+  const gradient = ctx.createLinearGradient(carX - trailLength, laneCenter, carX - 34, laneCenter);
+  gradient.addColorStop(0, "rgba(249, 115, 22, 0)");
+  gradient.addColorStop(0.3, boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
+  gradient.addColorStop(1, boostActive ? color : "rgba(226,232,240,0.32)");
+
   ctx.save();
-  ctx.translate(x + 18, y + height / 2 + 28);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillText(label, 0, 0);
+  ctx.fillStyle = gradient;
+  ctx.shadowColor = boostActive ? "#fb923c" : color;
+  ctx.shadowBlur = boostActive ? 26 : 10;
+  ctx.beginPath();
+  ctx.moveTo(carX - 34, laneCenter - 6);
+  ctx.lineTo(carX - trailLength, laneCenter - flameHeight + boostPulse);
+  ctx.lineTo(carX - trailLength * 0.72, laneCenter);
+  ctx.lineTo(carX - trailLength, laneCenter + flameHeight - boostPulse);
+  ctx.lineTo(carX - 34, laneCenter + 6);
+  ctx.closePath();
+  ctx.fill();
   ctx.restore();
+}
+
+function drawCar(ctx, x, y, laneHeight, color, scale, carNo, boostActive) {
+  const carWidth = Math.max(48, Math.min(86, laneHeight * 1.38)) * scale;
+  const carHeight = Math.max(18, Math.min(34, laneHeight * 0.48)) * scale;
+  const wheelRadius = Math.max(4, carHeight * 0.28);
+  const bodyX = x - carWidth / 2;
+  const bodyY = y - carHeight / 2;
+
+  ctx.save();
+  ctx.shadowColor = boostActive ? "#fdba74" : color;
+  ctx.shadowBlur = boostActive ? 26 : 15;
+  ctx.fillStyle = color;
+  roundedRect(ctx, bodyX, bodyY, carWidth, carHeight, carHeight * 0.22);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+  roundedRect(ctx, bodyX + carWidth * 0.44, bodyY - carHeight * 0.34, carWidth * 0.34, carHeight * 0.48, 6);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(248,250,252,0.88)";
+  ctx.fillRect(bodyX + carWidth - 5, y - carHeight * 0.24, 6, carHeight * 0.18);
+  ctx.fillRect(bodyX + carWidth - 5, y + carHeight * 0.08, 6, carHeight * 0.18);
+
+  ctx.fillStyle = "rgba(2, 6, 23, 0.96)";
+  ctx.beginPath();
+  ctx.arc(bodyX + carWidth * 0.25, bodyY + carHeight + 1, wheelRadius, 0, Math.PI * 2);
+  ctx.arc(bodyX + carWidth * 0.76, bodyY + carHeight + 1, wheelRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(226,232,240,0.9)";
+  ctx.font = `900 ${Math.max(8, carHeight * 0.34)}px system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(carNo), bodyX + carWidth * 0.28, y);
+
+  ctx.restore();
+  ctx.textAlign = "start";
+}
+
+function drawStartLine(ctx, x, y, height) {
+  ctx.fillStyle = "rgba(34,197,94,0.95)";
+  ctx.fillRect(x - 4, y, 8, height);
+  ctx.fillStyle = "rgba(187,247,208,0.9)";
+  ctx.font = "800 11px system-ui";
+  ctx.save();
+  ctx.translate(x - 14, y + height / 2 + 22);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("START", 0, 0);
+  ctx.restore();
+}
+
+function drawFinishLine(ctx, x, y, height) {
+  const cell = Math.max(6, Math.min(12, height / 18));
+  for (let row = 0; row < Math.ceil(height / cell); row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? "#f8fafc" : "#020617";
+      ctx.fillRect(x - 8 + col * cell, y + row * cell, cell, cell);
+    }
+  }
+  ctx.strokeStyle = "rgba(248,250,252,0.95)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x - 8, y, cell * 3, height);
+  ctx.fillStyle = "rgba(248,250,252,0.92)";
+  ctx.font = "800 11px system-ui";
+  ctx.save();
+  ctx.translate(x + cell * 3 + 10, y + height / 2 + 22);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("FINISH", 0, 0);
+  ctx.restore();
+}
+
+function roundedRect(ctx, x, y, width, height, radius) {
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    return;
+  }
+
+  const safeRadius = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + safeRadius, y);
+  ctx.lineTo(x + width - safeRadius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + safeRadius);
+  ctx.lineTo(x + width, y + height - safeRadius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - safeRadius, y + height);
+  ctx.lineTo(x + safeRadius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - safeRadius);
+  ctx.lineTo(x, y + safeRadius);
+  ctx.quadraticCurveTo(x, y, x + safeRadius, y);
+}
+
+function trimCanvasText(value, maxLength) {
+  const text = String(value);
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, Math.max(1, maxLength - 1))}…`;
 }
 
 function renderResult() {
@@ -634,25 +834,24 @@ function renderResult() {
 
       <section class="result-hero">
         <div>
-          <span>우승</span>
-          <strong>${winner ? escapeHtml(winner.name) : "-"}</strong>
+          <span>우승 자동차</span>
+          <strong>${winner ? `${carHash(winner)} ${escapeHtml(winner.name)}` : "-"}</strong>
         </div>
         <div class="buyer">
           <span>오늘의 음료수 담당</span>
-          <strong>${buyer ? escapeHtml(buyer.name) : "-"}</strong>
+          <strong>${buyer ? `${carHash(buyer)} ${escapeHtml(buyer.name)}` : "-"}</strong>
         </div>
       </section>
 
       <section class="ranking-list">
         ${ranking
           .map(
-            (racer, index) => html`
+            (racer) => html`
               <article class="ranking-row ${racer.id === race?.drinkBuyerId ? "buyer-row" : ""}" style="--player-color: ${colorFor(racer)}">
-                <span class="rank">${index + 1}</span>
+                <span class="rank">${carHash(racer)}</span>
                 <strong>${escapeHtml(racer.name)}</strong>
-                <span>${racer.selectedOrder}번 선택</span>
                 <span>${racer.finishTime?.toFixed(2) ?? "--"}s</span>
-                <em>${racer.id === race?.drinkBuyerId ? "음료수 담당" : racer.id === race?.winnerId ? "우승" : ""}</em>
+                <em>${racer.id === race?.drinkBuyerId ? "음료수 담당" : racer.id === race?.winnerId ? "우승" : "완주"}</em>
               </article>
             `,
           )
@@ -679,6 +878,20 @@ function escapeHtml(value) {
 function escapeAttribute(value) {
   return escapeHtml(value).replaceAll("`", "&#096;");
 }
+
+window.addEventListener("resize", () => {
+  if (state.screen === "race") {
+    drawRaceCanvas();
+  }
+});
+
+window.addEventListener("orientationchange", () => {
+  window.setTimeout(() => {
+    if (state.screen === "race") {
+      drawRaceCanvas();
+    }
+  }, 120);
+});
 
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) cancelRaceLoop();

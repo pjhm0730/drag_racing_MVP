@@ -17,10 +17,12 @@ Then open `http://127.0.0.1:5173/`.
 - Home, lobby, launch, race, and result screens
 - 2 to 10 local players
 - Player cards selected by click or touch
-- Stable player identity colors by lobby position
-- Selection order badges that reflow after deselect
-- Canvas-based drag racing track
-- Simulated reaction, acceleration, nitro, finish times, ranking
+- Fixed visible car numbers: `Car #1` through `Car #10`
+- Internal pick tracking without showing pick order to players
+- Stable car identity colors by car number
+- Responsive canvas-based drag racing track
+- Simulated reaction, acceleration, nitro, surge pulses, finish times, ranking
+- Mobile landscape race layout and boosted speed effects
 - Last-place drink buyer result
 
 ## Next Work

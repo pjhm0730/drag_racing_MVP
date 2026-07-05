@@ -10,10 +10,11 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100%;
   background:
     radial-gradient(circle at 20% 10%, rgba(248, 113, 22, 0.2), transparent 30%),
     linear-gradient(135deg, #070b12 0%, #111827 52%, #18181b 100%);
@@ -34,7 +35,7 @@ button:disabled {
 }
 
 .app-shell {
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .home-layout,
@@ -48,7 +49,7 @@ button:disabled {
   display: grid;
   align-content: center;
   gap: 28px;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 42px 0;
 }
 
@@ -159,14 +160,14 @@ h1 {
 .page-layout {
   display: grid;
   gap: 18px;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 24px 0;
 }
 
 .top-bar,
 .race-header {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
 }
@@ -237,7 +238,7 @@ h1 {
 
 .player-card.selected {
   border-color: var(--player-color);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--player-color) 18%, rgba(15, 23, 42, 0.9)), rgba(15, 23, 42, 0.8));
+  background: linear-gradient(180deg, rgba(249, 115, 22, 0.14), rgba(15, 23, 42, 0.84));
   transform: translateY(-2px);
 }
 
@@ -262,55 +263,76 @@ h1 {
   font-weight: 900;
 }
 
+.slot-badge {
+  letter-spacing: 0.02em;
+}
+
 .selection-badge {
   background: rgba(255, 255, 255, 0.1);
   color: #f8fafc;
   font-size: 0.82rem;
 }
 
+.player-card.selected .selection-badge {
+  background: rgba(34, 197, 94, 0.2);
+  color: #bbf7d0;
+}
+
 .car-preview {
   position: relative;
-  height: 58px;
+  height: 62px;
 }
 
 .car-body {
   position: absolute;
   left: 50%;
-  top: 20px;
-  width: 108px;
+  top: 22px;
+  width: 112px;
   height: 28px;
   border-radius: 7px;
   background: var(--player-color);
-  box-shadow: 0 0 24px color-mix(in srgb, var(--player-color) 56%, transparent);
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.34);
   transform: translateX(-50%);
 }
 
-.car-body::before {
+.car-window {
   position: absolute;
-  top: -16px;
-  left: 42px;
+  left: calc(50% + 2px);
+  top: 8px;
   width: 38px;
-  height: 20px;
+  height: 22px;
   border-radius: 8px 8px 3px 3px;
-  background: rgba(15, 23, 42, 0.82);
-  content: "";
+  background: rgba(15, 23, 42, 0.88);
+  transform: skewX(-10deg);
+}
+
+.car-light {
+  position: absolute;
+  left: calc(50% + 52px);
+  top: 31px;
+  width: 8px;
+  height: 7px;
+  border-radius: 999px;
+  background: #f8fafc;
+  box-shadow: 0 0 12px #f8fafc;
 }
 
 .car-wheel {
   position: absolute;
-  top: 43px;
+  top: 45px;
   width: 16px;
   height: 16px;
+  border: 3px solid #334155;
   border-radius: 50%;
   background: #020617;
 }
 
 .car-wheel.front {
-  left: calc(50% + 30px);
+  left: calc(50% + 31px);
 }
 
 .car-wheel.rear {
-  left: calc(50% - 46px);
+  left: calc(50% - 47px);
 }
 
 .player-card label {
@@ -384,22 +406,49 @@ h1 {
   font-size: 1.2rem;
 }
 
+.screen-race {
+  overflow: hidden;
+}
+
 .race-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-columns: minmax(0, 1fr) clamp(180px, 20vw, 250px);
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 14px;
-  min-height: 100vh;
-  padding: 18px 0;
+  gap: 8px;
+  width: 100dvw;
+  height: 100dvh;
+  min-height: 100dvh;
+  padding: 8px;
 }
 
 .race-header {
   grid-column: 1 / -1;
+  min-height: 42px;
+}
+
+.race-header h1 {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1;
+}
+
+.race-header .eyebrow {
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+}
+
+.race-rule {
+  justify-self: center;
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .race-stage {
   position: relative;
   overflow: hidden;
+  min-width: 0;
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: #111827;
@@ -409,7 +458,6 @@ h1 {
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 520px;
 }
 
 .countdown {
@@ -427,8 +475,9 @@ h1 {
 .race-hud {
   display: grid;
   align-content: start;
-  gap: 8px;
-  overflow: auto;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .hud-row,
@@ -436,11 +485,21 @@ h1 {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.74);
+}
+
+.hud-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 7px;
+}
+
+.hud-row.boosting {
+  border-color: #fb923c;
+  box-shadow: 0 0 18px rgba(249, 115, 22, 0.18);
 }
 
 .hud-row strong,
@@ -450,10 +509,24 @@ h1 {
   white-space: nowrap;
 }
 
+.hud-row small {
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.hud-row em {
+  grid-column: 3;
+  color: #fdba74;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
 .hud-progress {
-  grid-column: 2 / -1;
+  grid-column: 1 / -1;
   overflow: hidden;
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -463,10 +536,6 @@ h1 {
   height: 100%;
   border-radius: inherit;
   background: var(--player-color);
-}
-
-.hud-row small {
-  color: #cbd5e1;
 }
 
 .result-layout {
@@ -499,6 +568,7 @@ h1 {
 
 .result-hero strong {
   font-size: clamp(1.8rem, 4vw, 3.2rem);
+  overflow-wrap: anywhere;
 }
 
 .ranking-list {
@@ -507,7 +577,7 @@ h1 {
 }
 
 .ranking-row {
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
 }
 
 .ranking-row em {
@@ -525,37 +595,109 @@ h1 {
   .result-hero {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .race-layout {
-    grid-template-columns: 1fr;
+@media (orientation: landscape) and (max-height: 520px) {
+  html,
+  body {
+    overflow: hidden;
   }
 
-  #raceCanvas {
-    min-height: 430px;
+  .race-layout {
+    grid-template-columns: minmax(0, 1fr) clamp(138px, 24vw, 190px);
+    grid-template-rows: 32px minmax(0, 1fr);
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .race-header {
+    min-height: 0;
+  }
+
+  .race-header h1 {
+    font-size: 1.05rem;
+  }
+
+  .race-header .eyebrow {
+    display: none;
+  }
+
+  .race-rule {
+    font-size: 0.72rem;
+  }
+
+  .race-header .compact {
+    min-height: 28px;
+    padding: 0 9px;
+    font-size: 0.75rem;
+  }
+
+  .race-stage {
+    border-radius: 6px;
+  }
+
+  .race-hud {
+    gap: 4px;
+  }
+
+  .hud-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 4px;
+    min-height: 29px;
+    padding: 3px 4px;
+    border-radius: 6px;
+  }
+
+  .hud-row .rank {
+    min-width: 42px;
+    min-height: 22px;
+    padding: 0 6px;
+    font-size: 0.67rem;
+  }
+
+  .hud-row strong {
+    font-size: 0.68rem;
+  }
+
+  .hud-row small,
+  .hud-row em {
+    font-size: 0.62rem;
+  }
+
+  .hud-progress {
+    display: none;
+  }
+}
+
+@media (orientation: portrait) {
+  .race-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(360px, 62dvh) auto;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
   }
 
   .race-hud {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
   }
 }
 
 @media (max-width: 620px) {
   .home-layout,
-  .page-layout,
-  .race-layout {
+  .page-layout {
     width: min(100vw - 20px, 1180px);
   }
 
   .top-bar,
-  .race-header,
   .bottom-action,
   .start-panel {
     align-items: stretch;
     grid-template-columns: auto 1fr;
   }
 
-  .top-bar .ghost-button,
-  .race-header .ghost-button {
+  .top-bar .ghost-button {
     grid-column: 1 / -1;
   }
 
@@ -565,8 +707,7 @@ h1 {
   }
 
   .feature-strip,
-  .result-hero,
-  .race-hud {
+  .result-hero {
     grid-template-columns: 1fr;
   }
 
