@@ -575,12 +575,16 @@ h1 {
 }
 
 @media (orientation: landscape) and (max-height: 520px) {
-  html,
-  body {
-    overflow: hidden;
+  .screen-lobby {
+    height: 100dvh;
+    overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .screen-lobby {
+  .screen-race {
+    height: 100dvh;
     overflow: hidden;
   }
 
@@ -588,10 +592,13 @@ h1 {
     grid-template-rows: 32px 30px minmax(0, 1fr) 38px;
     gap: 5px;
     width: 100dvw;
+    min-height: 100svh;
     height: 100dvh;
-    min-height: 100dvh;
     padding: 5px;
-    overflow: hidden;
+    overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .lobby-layout .top-bar {
@@ -647,34 +654,37 @@ h1 {
 
   .lobby-layout .player-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(112px, 1fr));
     gap: 5px;
     min-height: 0;
-    overflow: hidden;
+    overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .lobby-layout .player-card {
-    grid-template-rows: auto 30px auto auto auto;
-    gap: 3px;
+    grid-template-rows: auto 24px auto auto auto;
+    gap: 2px;
     min-height: 0;
-    padding: 5px;
+    padding: 4px;
     overflow: hidden;
   }
 
   .lobby-layout .slot-badge,
   .lobby-layout .selection-badge {
     min-width: 0;
-    min-height: 20px;
-    padding: 0 6px;
-    font-size: 0.62rem;
+    min-height: 18px;
+    padding: 0 5px;
+    font-size: 0.58rem;
   }
 
   .lobby-layout .car-preview {
-    height: 30px;
+    height: 24px;
   }
 
   .lobby-layout .car-type {
-    font-size: 0.56rem;
+    font-size: 0.52rem;
     line-height: 1;
   }
 
@@ -688,9 +698,15 @@ h1 {
   }
 
   .lobby-layout .player-card input {
+    min-height: 20px;
+    padding: 0 5px;
+    font-size: 0.64rem;
+  }
+
+  .lobby-layout .player-card .ghost-button.compact {
     min-height: 22px;
     padding: 0 6px;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .lobby-layout .bottom-action {
@@ -711,9 +727,9 @@ h1 {
   }
 
   .lobby-layout .bottom-action .primary-button {
-    min-height: 28px;
-    padding: 0 10px;
-    font-size: 0.72rem;
+    min-height: 26px;
+    padding: 0 9px;
+    font-size: 0.7rem;
   }
 
   .race-layout {
