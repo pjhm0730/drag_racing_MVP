@@ -279,8 +279,19 @@ h1 {
 }
 
 .car-preview {
+  display: block;
   position: relative;
+  width: 100%;
   height: 62px;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.24));
+}
+
+.car-type {
+  color: #fdba74;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .car-body {
@@ -412,22 +423,35 @@ h1 {
 
 .race-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(180px, 20vw, 250px);
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  gap: 0;
   width: 100dvw;
   height: 100dvh;
   min-height: 100dvh;
-  padding: 8px;
+  padding: 0;
+  overflow: hidden;
+  position: relative;
 }
 
 .race-header {
-  grid-column: 1 / -1;
-  min-height: 42px;
+  position: absolute;
+  z-index: 2;
+  top: max(6px, env(safe-area-inset-top));
+  left: max(6px, env(safe-area-inset-left));
+  right: max(6px, env(safe-area-inset-right));
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 34px;
+  padding: 5px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.48);
+  backdrop-filter: blur(8px);
 }
 
 .race-header h1 {
-  font-size: clamp(1.25rem, 3vw, 2rem);
+  font-size: clamp(1rem, 2.2vw, 1.45rem);
   line-height: 1;
 }
 
@@ -440,17 +464,19 @@ h1 {
   justify-self: center;
   margin: 0;
   color: #cbd5e1;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   font-weight: 800;
 }
 
 .race-stage {
+  grid-column: 1;
+  grid-row: 1;
   position: relative;
   overflow: hidden;
   min-width: 0;
   min-height: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border: 0;
+  border-radius: 0;
   background: #111827;
 }
 
@@ -472,15 +498,6 @@ h1 {
   text-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
-.race-hud {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.hud-row,
 .ranking-row {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -492,50 +509,10 @@ h1 {
   background: rgba(15, 23, 42, 0.74);
 }
 
-.hud-row {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  padding: 7px;
-}
-
-.hud-row.boosting {
-  border-color: #fb923c;
-  box-shadow: 0 0 18px rgba(249, 115, 22, 0.18);
-}
-
-.hud-row strong,
 .ranking-row strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.hud-row small {
-  color: #cbd5e1;
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.hud-row em {
-  grid-column: 3;
-  color: #fdba74;
-  font-size: 0.74rem;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.hud-progress {
-  grid-column: 1 / -1;
-  overflow: hidden;
-  height: 7px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.hud-progress span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--player-color);
 }
 
 .result-layout {
@@ -603,15 +580,152 @@ h1 {
     overflow: hidden;
   }
 
-  .race-layout {
-    grid-template-columns: minmax(0, 1fr) clamp(138px, 24vw, 190px);
-    grid-template-rows: 32px minmax(0, 1fr);
+  .screen-lobby {
+    overflow: hidden;
+  }
+
+  .lobby-layout {
+    grid-template-rows: 32px 30px minmax(0, 1fr) 38px;
     gap: 5px;
+    width: 100dvw;
+    height: 100dvh;
+    min-height: 100dvh;
     padding: 5px;
+    overflow: hidden;
+  }
+
+  .lobby-layout .top-bar {
+    gap: 7px;
+  }
+
+  .lobby-layout .top-bar h1 {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .lobby-layout .top-bar .eyebrow {
+    display: none;
+  }
+
+  .lobby-layout .icon-button {
+    width: 30px;
+    min-height: 30px;
+    font-size: 1rem;
+  }
+
+  .lobby-layout .top-bar .compact,
+  .lobby-layout .ghost-button.compact {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 0.72rem;
+  }
+
+  .lobby-controls {
+    align-items: center;
+    gap: 6px;
+    min-height: 0;
+  }
+
+  .lobby-controls .segmented-control {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .lobby-controls .segmented-control button {
+    min-width: 42px;
+    min-height: 22px;
+    font-size: 0.68rem;
+  }
+
+  .selection-summary strong {
+    font-size: 1.1rem;
+  }
+
+  .selection-summary span {
+    font-size: 0.72rem;
+  }
+
+  .lobby-layout .player-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .lobby-layout .player-card {
+    grid-template-rows: auto 30px auto auto auto;
+    gap: 3px;
+    min-height: 0;
+    padding: 5px;
+    overflow: hidden;
+  }
+
+  .lobby-layout .slot-badge,
+  .lobby-layout .selection-badge {
+    min-width: 0;
+    min-height: 20px;
+    padding: 0 6px;
+    font-size: 0.62rem;
+  }
+
+  .lobby-layout .car-preview {
+    height: 30px;
+  }
+
+  .lobby-layout .car-type {
+    font-size: 0.56rem;
+    line-height: 1;
+  }
+
+  .lobby-layout .player-card label {
+    gap: 2px;
+    font-size: 0.62rem;
+  }
+
+  .lobby-layout .player-card label span {
+    display: none;
+  }
+
+  .lobby-layout .player-card input {
+    min-height: 22px;
+    padding: 0 6px;
+    font-size: 0.68rem;
+  }
+
+  .lobby-layout .bottom-action {
+    min-height: 0;
+    padding: 5px 7px;
+  }
+
+  .lobby-layout .bottom-action strong {
+    font-size: 0.72rem;
+  }
+
+  .lobby-layout .bottom-action span {
+    max-width: 62dvw;
+    overflow: hidden;
+    font-size: 0.66rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lobby-layout .bottom-action .primary-button {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 0.72rem;
+  }
+
+  .race-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    gap: 0;
+    padding: 0;
   }
 
   .race-header {
     min-height: 0;
+    padding: 3px 5px;
   }
 
   .race-header h1 {
@@ -627,60 +741,23 @@ h1 {
   }
 
   .race-header .compact {
-    min-height: 28px;
+    min-height: 26px;
     padding: 0 9px;
     font-size: 0.75rem;
   }
 
   .race-stage {
-    border-radius: 6px;
-  }
-
-  .race-hud {
-    gap: 4px;
-  }
-
-  .hud-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 4px;
-    min-height: 29px;
-    padding: 3px 4px;
-    border-radius: 6px;
-  }
-
-  .hud-row .rank {
-    min-width: 42px;
-    min-height: 22px;
-    padding: 0 6px;
-    font-size: 0.67rem;
-  }
-
-  .hud-row strong {
-    font-size: 0.68rem;
-  }
-
-  .hud-row small,
-  .hud-row em {
-    font-size: 0.62rem;
-  }
-
-  .hud-progress {
-    display: none;
+    border-radius: 0;
   }
 }
 
 @media (orientation: portrait) {
   .race-layout {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(360px, 62dvh) auto;
-    height: auto;
+    grid-template-rows: 1fr;
+    height: 100dvh;
     min-height: 100dvh;
-    overflow: visible;
-  }
-
-  .race-hud {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: visible;
+    overflow: hidden;
   }
 }
 
