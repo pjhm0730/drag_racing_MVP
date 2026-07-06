@@ -192,7 +192,7 @@ h1 {
 .segmented-control button {
   border: 0;
   border-radius: 6px;
-  min-width: 58px;
+  min-width: 76px;
   min-height: 36px;
   background: transparent;
   color: #cbd5e1;
@@ -242,6 +242,11 @@ h1 {
   transform: translateY(-2px);
 }
 
+.player-card.locked {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 .player-card-header {
   display: flex;
   align-items: center;
@@ -279,11 +284,23 @@ h1 {
 }
 
 .car-preview {
-  display: block;
+  display: grid;
+  place-items: center;
   position: relative;
   width: 100%;
-  height: 62px;
+  height: 72px;
+  margin: 0;
+  overflow: hidden;
   filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.24));
+}
+
+.car-photo,
+.car-preview-fallback {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
 }
 
 .car-type {
@@ -639,9 +656,9 @@ h1 {
   }
 
   .lobby-controls .segmented-control button {
-    min-width: 42px;
+    min-width: 66px;
     min-height: 22px;
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .selection-summary strong {
@@ -654,7 +671,7 @@ h1 {
 
   .lobby-layout .player-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(112px, 1fr));
+    grid-template-rows: repeat(2, minmax(124px, 1fr));
     gap: 5px;
     min-height: 0;
     overflow-y: auto;
@@ -664,7 +681,7 @@ h1 {
   }
 
   .lobby-layout .player-card {
-    grid-template-rows: auto 24px auto auto auto;
+    grid-template-rows: auto 34px auto auto auto;
     gap: 2px;
     min-height: 0;
     padding: 4px;
@@ -680,7 +697,7 @@ h1 {
   }
 
   .lobby-layout .car-preview {
-    height: 24px;
+    height: 34px;
   }
 
   .lobby-layout .car-type {

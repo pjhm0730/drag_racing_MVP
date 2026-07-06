@@ -1,18 +1,10 @@
-# Car Image Drop Folder
+# Car Image Assets
 
-Do not commit screenshots or downloaded vehicle photos unless you own them or have permission to use them.
+This folder contains the 10 WebP car images used by the static MVP.
 
-Suggested filenames for user-provided images:
+The app reads these paths from `CAR_DEFS` in `src/app.js`:
 
-- `car-01.jpg`
-- `car-02.jpg`
-- `car-03.jpg`
-- `car-04.jpg`
-- `car-05.jpg`
-- `car-06.jpg`
-- `car-07.jpg`
-- `car-08.jpg`
-- `car-09.jpg`
-- `car-10.jpg`
+- `car-01.webp` through `car-10.webp`
 
-The current MVP uses dependency-free SVG/canvas car drawings by default, so the app works without image files.
+If these images are replaced later, keep the same filenames or update `CAR_DEFS`.
+The canvas renderer still has dependency-free vector fallback drawings if an image fails to load.

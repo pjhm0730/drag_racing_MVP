@@ -17,15 +17,16 @@
 - Removed the landscape body overflow lock and kept overflow hidden scoped to the Race screen, so Lobby can receive wheel/touch scroll.
 - Changed compact Lobby grid rows to keep a real minimum row height, which creates scrollable overflow instead of clipping card contents on very short landscape screens.
 - Reduced compact Lobby card height, spacing, badges, preview artwork, nickname inputs, and buttons for landscape use.
-- Added `assets/cars/README.md` as the drop location guidance for user-owned or permitted real car images.
-- Did not add captured/downloaded real vehicle photos to the repo; the current MVP keeps dependency-free generated SVG/canvas vehicle graphics.
+- Added 10 user-provided real car photo assets as `assets/cars/car-01.webp` through `assets/cars/car-10.webp`.
+- Cropped the provided source screenshots to vehicle-focused transparent WebP assets for Lobby cards and Race canvas rendering.
+- Updated `CAR_DEFS` to manage each car's `id`, real model name, image path, and accent color.
+- Changed Lobby behavior so all 10 cars are always visible; the 2/4/6/8/10 control now limits the maximum selected race cars.
+- Added max-selection locking so unselected cars show `마감` after the chosen limit is reached, while selected cars can still be deselected.
+- Fixed selected-car tracking to compute from all 10 cars, so non-contiguous choices such as Car #1, #2, #3, and #5 correctly carry into Launch and Race.
 - Removed the Race screen right-side dashboard/progress list/status panel; Race now renders as a canvas-first full-screen view.
 - Converted the Race header to a small overlay so the canvas can occupy essentially the full viewport.
 - Reduced race car render size by roughly 15-25% and scaled exhaust/boost trails with lane height.
-- Added `CAR_DEFS` as the single configuration point for 10 generic car shapes and labels.
-- Added distinct dependency-free vehicle drawings for SUV, Sedan, Large Sedan, Compact SUV, Compact, Sports Sedan, Luxury Sedan, Coupe, Boxy SUV, and Hatchback.
-- Reused the same car definitions for Lobby SVG previews and Race canvas rendering.
-- Verified no real brand marks or downloaded vehicle images were added.
+- Race canvas now draws the loaded WebP car photos first and keeps dependency-free vector drawings as image-load fallback.
 - Simplified the visible numbering system so users only see fixed car numbers: `Car #1` through `Car #10`.
 - Kept `selectedOrder` only as internal selection tracking for lane assignment; pick order is no longer shown in Lobby, Launch, Canvas, or Result.
 - Reworded UI labels away from pick-order language and toward car identity language such as `Car #5` and `5번 자동차`.
@@ -43,6 +44,9 @@
 - Player card click/touch selection and deselection
 - Single visible car number system using fixed `Car #1` through `Car #10`
 - Selection tracking is internal only; the UI does not show pick order
+- Lobby always shows all 10 car cards
+- Maximum selected race cars can be set to 2, 4, 6, 8, or 10
+- Selection limit lock state for unselected cars after max selection is reached
 - Stable car identity colors based on fixed car number
 - Nickname editing and per-player/random-all nickname generation
 - Responsive drag race canvas with 2 to 10 lanes
@@ -50,9 +54,10 @@
 - Mobile landscape Lobby layout that fits 10 compact car cards as 5 columns x 2 rows
 - Mobile landscape Lobby grid can scroll by wheel/touch when the viewport is shorter than the fully fitted layout
 - Canvas-only Race screen without the previous right-side dashboard
-- Generic car type system managed by `CAR_DEFS`
-- Distinct SVG Lobby previews and canvas race shapes per car type
-- `assets/cars/` folder guidance for future user-provided real car photos
+- Real car photo asset system managed by `CAR_DEFS`
+- Lobby photo previews with SVG fallback
+- Race canvas car photo rendering with vector fallback
+- `assets/cars/car-01.webp` through `assets/cars/car-10.webp`
 - Reaction delay, acceleration, nitro, surge pulses, lane progress, finish ranking
 - Moving road stripes, track markers, speed lines, exhaust trails, boost glow, and checkered finish line
 - Result screen showing winner and today's drink buyer as last place
@@ -62,11 +67,14 @@
 - JavaScript syntax checked with `node --check src/app.js`.
 - Static HTTP smoke test returned `200 text/html` for `index.html`.
 - Browser flow tested for 2, 4, 6, and 10 cars through Lobby, Launch, Race, and Result.
-- Mobile landscape viewport `852 x 393` tested with 10 cars: Lobby cards fit as 5 columns x 2 rows, all cards stayed inside the viewport, and vertical overflow was `0`.
-- Short mobile landscape viewport `852 x 320` tested with 10 cars: Lobby remained 5 columns x 2 rows and player-grid wheel scroll moved from `scrollTop 0` to `scrollTop 34`.
+- Mobile landscape viewport `852 x 393` tested with 10 cars: Lobby cards fit as 5 columns x 2 rows, all 10 car images loaded, and vertical overflow was `0`.
+- Max-select test at `852 x 393`: with max set to 4, selected Car #1, #2, #3, and #5; unselected cars locked, Car #6 click was blocked, and Launch showed exactly 4 selected cars.
+- Short mobile landscape viewport `852 x 320` tested with 10 cars: Lobby remained 5 columns x 2 rows and player-grid wheel scroll moved from `scrollTop 0` to `scrollTop 58`.
 - Mobile landscape viewport `852 x 393` tested for Race: canvas occupied the full viewport area, right dashboard DOM was absent, and vertical overflow was `0`.
+- Race visual check confirmed selected car photos render on canvas during countdown.
+- Result flow retested with 4 selected cars: Result screen showed 4 ranking rows and today's drink buyer.
 - Boost rendering path remains implemented through canvas trail, glow, pulse, and `BOOST!` label effects.
-- Repo file scan found no `.jpg`, `.jpeg`, `.png`, or `.webp` car image assets under `assets/`; only the car image drop-folder README was added.
+- Repo asset scan found 10 committed WebP car assets under `assets/cars/`.
 - UI scan and browser checks found no visible pick-order text such as `선택 순서`, `1번 선택`, or `그리드`.
 - Browser console error check returned no errors.
 - HTML/CSS/JS are dependency-free and designed for direct browser opening.

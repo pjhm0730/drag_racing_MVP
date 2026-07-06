@@ -13,8 +13,11 @@ const PLAYER_COLORS = [
 
 const CAR_DEFS = [
   {
-    id: "mid-suv",
-    label: "SUV",
+    id: "santa-fe",
+    name: "싼타페",
+    label: "2026 싼타페",
+    image: "./assets/cars/car-01.webp",
+    color: "#e5e7eb",
     width: 1.04,
     height: 1.08,
     roofX: 0.38,
@@ -25,32 +28,26 @@ const CAR_DEFS = [
     stance: "tall",
   },
   {
-    id: "sedan",
-    label: "Sedan",
-    width: 1.1,
-    height: 0.82,
-    roofX: 0.42,
-    roofWidth: 0.34,
-    roofHeight: 0.38,
-    wheelBase: 0.66,
-    roundness: 0.18,
-    stance: "low",
-  },
-  {
-    id: "large-sedan",
-    label: "Large Sedan",
+    id: "grandeur",
+    name: "그랜저",
+    label: "2027 그랜저",
+    image: "./assets/cars/car-02.webp",
+    color: "#111827",
     width: 1.2,
     height: 0.9,
-    roofX: 0.43,
-    roofWidth: 0.4,
-    roofHeight: 0.4,
-    wheelBase: 0.7,
-    roundness: 0.2,
+    roofX: 0.42,
+    roofWidth: 0.38,
+    roofHeight: 0.38,
+    wheelBase: 0.69,
+    roundness: 0.24,
     stance: "long",
   },
   {
-    id: "compact-suv",
-    label: "Compact SUV",
+    id: "casper",
+    name: "캐스퍼",
+    label: "2026 캐스퍼",
+    image: "./assets/cars/car-03.webp",
+    color: "#f8fafc",
     width: 0.95,
     height: 1.08,
     roofX: 0.34,
@@ -61,8 +58,41 @@ const CAR_DEFS = [
     stance: "tall",
   },
   {
-    id: "compact",
-    label: "Compact",
+    id: "sorento",
+    name: "쏘렌토",
+    label: "2026 쏘렌토",
+    image: "./assets/cars/car-04.webp",
+    color: "#f1f5f9",
+    width: 1.08,
+    height: 1.06,
+    roofX: 0.38,
+    roofWidth: 0.43,
+    roofHeight: 0.48,
+    wheelBase: 0.64,
+    roundness: 0.17,
+    stance: "tall",
+  },
+  {
+    id: "mclaren-720s",
+    name: "맥라렌 720S",
+    label: "2026 맥라렌 720S",
+    image: "./assets/cars/car-05.webp",
+    color: "#f97316",
+    width: 1.18,
+    height: 0.62,
+    roofX: 0.48,
+    roofWidth: 0.28,
+    roofHeight: 0.3,
+    wheelBase: 0.7,
+    roundness: 0.18,
+    stance: "sharp",
+  },
+  {
+    id: "morning",
+    name: "모닝",
+    label: "2025 모닝",
+    image: "./assets/cars/car-06.webp",
+    color: "#d1d5db",
     width: 0.84,
     height: 0.82,
     roofX: 0.34,
@@ -73,8 +103,11 @@ const CAR_DEFS = [
     stance: "round",
   },
   {
-    id: "sports-sedan",
-    label: "Sports Sedan",
+    id: "bmw-m3",
+    name: "BMW M3",
+    label: "2026 BMW M3",
+    image: "./assets/cars/car-07.webp",
+    color: "#22c55e",
     width: 1.12,
     height: 0.72,
     roofX: 0.44,
@@ -85,32 +118,11 @@ const CAR_DEFS = [
     stance: "sharp",
   },
   {
-    id: "luxury-sedan",
-    label: "Luxury Sedan",
-    width: 1.18,
-    height: 0.86,
-    roofX: 0.42,
-    roofWidth: 0.38,
-    roofHeight: 0.38,
-    wheelBase: 0.69,
-    roundness: 0.24,
-    stance: "long",
-  },
-  {
-    id: "coupe",
-    label: "Coupe",
-    width: 1.06,
-    height: 0.64,
-    roofX: 0.48,
-    roofWidth: 0.28,
-    roofHeight: 0.3,
-    wheelBase: 0.64,
-    roundness: 0.22,
-    stance: "sharp",
-  },
-  {
-    id: "boxy-suv",
-    label: "Boxy SUV",
+    id: "g-class",
+    name: "벤츠 G클래스",
+    label: "2026 벤츠 G클래스",
+    image: "./assets/cars/car-08.webp",
+    color: "#1d4ed8",
     width: 0.98,
     height: 1.16,
     roofX: 0.28,
@@ -121,16 +133,34 @@ const CAR_DEFS = [
     stance: "boxy",
   },
   {
-    id: "hatchback",
-    label: "Hatchback",
-    width: 0.9,
-    height: 0.86,
-    roofX: 0.33,
-    roofWidth: 0.46,
-    roofHeight: 0.44,
-    wheelBase: 0.56,
-    roundness: 0.28,
-    stance: "round",
+    id: "korando",
+    name: "쌍용 코란도 하이 디럭스",
+    label: "1992 코란도 하이 디럭스",
+    image: "./assets/cars/car-09.webp",
+    color: "#0f172a",
+    width: 1,
+    height: 1.14,
+    roofX: 0.27,
+    roofWidth: 0.54,
+    roofHeight: 0.55,
+    wheelBase: 0.6,
+    roundness: 0.06,
+    stance: "boxy",
+  },
+  {
+    id: "model-s",
+    name: "테슬라 모델 S",
+    label: "2025 테슬라 모델 S",
+    image: "./assets/cars/car-10.webp",
+    color: "#3b82f6",
+    width: 1.2,
+    height: 0.74,
+    roofX: 0.43,
+    roofWidth: 0.38,
+    roofHeight: 0.33,
+    wheelBase: 0.72,
+    roundness: 0.22,
+    stance: "low",
   },
 ];
 
@@ -181,20 +211,52 @@ const DEFAULT_STATE = {
 const state = structuredClone(DEFAULT_STATE);
 const app = document.querySelector("#app");
 let animationFrameId = null;
+const carImageCache = new Map();
+
+function preloadCarImages() {
+  CAR_DEFS.forEach(loadCarImage);
+}
+
+function loadCarImage(carDef) {
+  if (!carDef.image || typeof Image === "undefined") return null;
+  if (carImageCache.has(carDef.id)) return carImageCache.get(carDef.id);
+
+  const entry = {
+    image: new Image(),
+    loaded: false,
+    failed: false,
+  };
+
+  entry.image.onload = () => {
+    entry.loaded = true;
+    if (state.screen === "race") drawRaceCanvas();
+  };
+  entry.image.onerror = () => {
+    entry.failed = true;
+  };
+  entry.image.src = carDef.image;
+  carImageCache.set(carDef.id, entry);
+  return entry;
+}
+
+function loadedCarImage(carDef) {
+  const entry = loadCarImage(carDef);
+  if (!entry?.loaded || entry.failed || entry.image.naturalWidth === 0) return null;
+  return entry.image;
+}
 
 function selectedPlayers() {
   return state.players
-    .slice(0, state.playerCount)
     .filter((player) => player.selectedOrder !== null)
     .sort((a, b) => a.selectedOrder - b.selectedOrder);
 }
 
 function visiblePlayers() {
-  return state.players.slice(0, state.playerCount);
+  return state.players;
 }
 
 function colorFor(player) {
-  return PLAYER_COLORS[player.carNo - 1] ?? "#94a3b8";
+  return carDefFor(player).color ?? PLAYER_COLORS[player.carNo - 1] ?? "#94a3b8";
 }
 
 function carHash(player) {
@@ -228,6 +290,7 @@ function togglePlayer(playerId) {
   if (!player) return;
 
   if (player.selectedOrder === null) {
+    if (selectedPlayers().length >= state.playerCount) return;
     player.selectedOrder = selectedPlayers().length + 1;
   } else {
     player.selectedOrder = null;
@@ -239,7 +302,7 @@ function togglePlayer(playerId) {
 
 function updatePlayerCount(count) {
   state.playerCount = count;
-  state.players.forEach((player, index) => {
+  selectedPlayers().forEach((player, index) => {
     if (index >= count) {
       player.selectedOrder = null;
     }
@@ -464,8 +527,8 @@ function renderHome() {
   app.querySelector("[data-action='go-lobby']").addEventListener("click", () => setScreen("lobby"));
   app.querySelector("[data-action='quick-start']").addEventListener("click", () => {
     updatePlayerCount(6);
-    visiblePlayers().forEach((player, index) => {
-      player.selectedOrder = index + 1;
+    state.players.forEach((player, index) => {
+      player.selectedOrder = index < 6 ? index + 1 : null;
     });
     prepareRace();
   });
@@ -485,20 +548,20 @@ function renderLobby() {
       </header>
 
       <section class="lobby-controls" aria-label="로비 설정">
-        <div class="segmented-control" role="group" aria-label="자동차 수">
+        <div class="segmented-control" role="group" aria-label="최대 참가 자동차 수">
           ${[2, 4, 6, 8, 10]
             .map(
               (count) => html`
                 <button class="${state.playerCount === count ? "active" : ""}" data-count="${count}">
-                  ${count}대
+                  최대 ${count}대
                 </button>
               `,
             )
             .join("")}
         </div>
         <div class="selection-summary">
-          <strong>${selected.length}</strong>
-          <span>대 참가</span>
+          <strong>${selected.length}/${state.playerCount}</strong>
+          <span>대 선택됨</span>
         </div>
       </section>
 
@@ -508,8 +571,8 @@ function renderLobby() {
 
       <footer class="bottom-action">
         <div>
-          <strong>참가 자동차</strong>
-          <span>${selected.length > 0 ? selected.map((player) => `${carHash(player)} ${escapeHtml(player.name)}`).join(" · ") : "카드를 눌러 참가할 자동차를 고르세요"}</span>
+          <strong>선택된 자동차</strong>
+          <span>${selected.length > 0 ? selected.map((player) => `${carHash(player)} ${escapeHtml(carDefFor(player).name)}`).join(" · ") : "10대 중 레이스에 참가할 자동차를 고르세요"}</span>
         </div>
         <button class="primary-button" data-action="prepare" ${selected.length < 2 ? "disabled" : ""}>
           레이스 준비
@@ -536,20 +599,38 @@ function renderLobby() {
   app.querySelectorAll("[data-reroll]").forEach((button) => {
     button.addEventListener("click", () => rerollPlayerName(button.dataset.reroll));
   });
+  wireCarPreviewFallbacks();
+}
+
+function wireCarPreviewFallbacks() {
+  app.querySelectorAll("[data-car-img]").forEach((image) => {
+    const fallback = image.nextElementSibling;
+    const showFallback = () => {
+      image.hidden = true;
+      if (fallback) fallback.hidden = false;
+    };
+
+    if (image.complete && image.naturalWidth === 0) showFallback();
+    image.addEventListener("error", showFallback);
+  });
 }
 
 function renderPlayerCard(player) {
   const selected = player.selectedOrder !== null;
   const carDef = carDefFor(player);
+  const locked = !selected && selectedPlayers().length >= state.playerCount;
   return html`
-    <article class="player-card ${selected ? "selected" : ""}" data-player-card="${player.id}" style="--player-color: ${colorFor(player)}">
+    <article class="player-card ${selected ? "selected" : ""} ${locked ? "locked" : ""}" data-player-card="${player.id}" style="--player-color: ${colorFor(player)}">
       <div class="player-card-header">
         <span class="slot-badge">${carHash(player)}</span>
-        <span class="selection-badge">${selected ? "참가" : "대기"}</span>
+        <span class="selection-badge">${selected ? "참가" : locked ? "마감" : "대기"}</span>
       </div>
-      <svg class="car-preview" viewBox="0 0 160 82" aria-hidden="true">
-        ${renderCarSvg(player, carDef)}
-      </svg>
+      <figure class="car-preview">
+        <img class="car-photo" data-car-img src="${escapeAttribute(carDef.image)}" alt="${escapeAttribute(carDef.name)}" loading="eager" draggable="false" />
+        <svg class="car-preview-fallback" viewBox="0 0 160 82" aria-hidden="true" hidden>
+          ${renderCarSvg(player, carDef)}
+        </svg>
+      </figure>
       <div class="car-type">${escapeHtml(carDef.label)}</div>
       <label>
         <span>닉네임</span>
@@ -861,6 +942,12 @@ function drawExhaust(ctx, carX, laneCenter, color, speed, boostActive, boostPuls
 
 function drawCar(ctx, x, y, laneHeight, color, scale, racer, boostActive) {
   const carDef = carDefFor(racer);
+  const carImage = loadedCarImage(carDef);
+  if (carImage) {
+    drawCarPhoto(ctx, x, y, laneHeight, color, scale, racer, boostActive, carImage, carDef);
+    return;
+  }
+
   const carWidth = Math.max(34, Math.min(68, laneHeight * 1.05)) * carDef.width * scale;
   const carHeight = Math.max(12, Math.min(24, laneHeight * 0.36)) * carDef.height * scale;
   const wheelRadius = Math.max(3.4, carHeight * 0.27);
@@ -916,6 +1003,36 @@ function drawCar(ctx, x, y, laneHeight, color, scale, racer, boostActive) {
   ctx.textBaseline = "middle";
   ctx.fillText(String(racer.carNo), bodyX + carWidth * 0.26, y);
 
+  ctx.restore();
+  ctx.textAlign = "start";
+}
+
+function drawCarPhoto(ctx, x, y, laneHeight, color, scale, racer, boostActive, image, carDef) {
+  const drawHeight = Math.max(28, Math.min(64, laneHeight * 1.14)) * scale;
+  const drawWidth = drawHeight * (image.naturalWidth / image.naturalHeight) * (carDef.photoScale ?? 1);
+  const drawX = x - drawWidth / 2;
+  const drawY = y - drawHeight / 2;
+
+  ctx.save();
+  ctx.shadowColor = boostActive ? "#fdba74" : color;
+  ctx.shadowBlur = boostActive ? 28 : 13;
+  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  ctx.restore();
+
+  const badgeHeight = Math.max(12, Math.min(18, laneHeight * 0.28));
+  const badgeWidth = badgeHeight * 1.72;
+  const badgeX = drawX + drawWidth * 0.16;
+  const badgeY = y - drawHeight * 0.34;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(2, 6, 23, 0.7)";
+  roundedRect(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeHeight / 2);
+  ctx.fill();
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = `900 ${Math.max(8, badgeHeight * 0.58)}px system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(racer.carNo), badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
   ctx.restore();
   ctx.textAlign = "start";
 }
@@ -1078,4 +1195,5 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden && state.screen === "race" && state.race?.status === "running") requestRaceFrame();
 });
 
+preloadCarImages();
 render();
