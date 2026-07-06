@@ -300,14 +300,14 @@ function createRaceEvents(players) {
   shuffled.slice(0, superBoostCount).forEach((player, index) => {
     const type = superBoostCount === 2 ? (index === 0 ? "early" : "late") : Math.random() < 0.52 ? "early" : "late";
     const early = type === "early";
-    const start = early ? 850 + Math.random() * 1450 : 0.6 + Math.random() * 0.18;
-    const duration = early ? 1050 + Math.random() * 650 : 0.14 + Math.random() * 0.08;
+    const start = early ? 650 + Math.random() * 1300 : 0.56 + Math.random() * 0.2;
+    const duration = early ? 1200 + Math.random() * 760 : 0.16 + Math.random() * 0.09;
 
     events.set(player.id, {
       superBoostType: type,
       superBoostStart: start,
       superBoostEnd: early ? start + duration : Math.min(0.93, start + duration),
-      superBoostMultiplier: early ? 1.22 + Math.random() * 0.18 : 1.34 + Math.random() * 0.24,
+      superBoostMultiplier: early ? 1.22 + Math.random() * 0.16 : 1.34 + Math.random() * 0.21,
     });
   });
 
@@ -323,8 +323,8 @@ function prepareRace() {
       ...player,
       lane: index,
       reactionMs: Math.round(40 + Math.random() * 190),
-      acceleration: 0.000000056 + Math.random() * 0.00000003,
-      maxSpeed: 0.000097 + Math.random() * 0.000028,
+      acceleration: 0.000000047 + Math.random() * 0.000000025,
+      maxSpeed: 0.000083 + Math.random() * 0.000023,
       launchQuality: -0.000008 + Math.random() * 0.000024,
       nitroAt: 0.28 + Math.random() * 0.34,
       nitroUsed: false,
@@ -352,6 +352,8 @@ function prepareRace() {
       progress: 0,
       speed: 0,
       finishTime: null,
+      finishRank: null,
+      finishEffectUntil: null,
       finished: false,
     };
   });
@@ -452,8 +454,8 @@ function tickRace(now) {
     if (!racer.nitroUsed && racer.progress >= racer.nitroAt) {
       racer.nitroUsed = true;
       racer.boostStartedAt = elapsed;
-      racer.boostEndsAt = elapsed + 640 + Math.random() * 520;
-      racer.boostLabelUntil = elapsed + 760;
+      racer.boostEndsAt = elapsed + 760 + Math.random() * 560;
+      racer.boostLabelUntil = elapsed + 960;
       racer.speed += 0.000029;
     }
 
@@ -461,7 +463,7 @@ function tickRace(now) {
     if (superBoostActive && !racer.isSuperBoosting) {
       racer.superBoostTriggeredAt = elapsed;
       racer.superBoostLabelUntil = elapsed + (racer.superBoostType === "late" ? 1250 : 1050);
-      racer.speed += (racer.superBoostType === "late" ? 0.00004 : 0.000034) * racer.superBoostMultiplier;
+      racer.speed += (racer.superBoostType === "late" ? 0.000038 : 0.000033) * racer.superBoostMultiplier;
     }
     racer.isSuperBoosting = superBoostActive;
 
@@ -479,18 +481,23 @@ function tickRace(now) {
       racer.burstStrength * burstWindow -
       racer.slowdownStrength * slowdownWindow;
     const superBoostBonus = superBoostActive
-      ? (racer.superBoostType === "late" ? 0.000052 : 0.000046) * racer.superBoostMultiplier
+      ? (racer.superBoostType === "late" ? 0.00005 : 0.000044) * racer.superBoostMultiplier
       : 0;
-    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + eventSpeed + superBoostBonus + (boostActive ? 0.00004 : 0);
+    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + eventSpeed + superBoostBonus + (boostActive ? 0.000038 : 0);
     const superBoostAcceleration = superBoostActive ? racer.acceleration * frameMs * (racer.superBoostMultiplier - 0.5) : 0;
 
-    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.00007), racer.speed + racer.acceleration * frameMs + superBoostAcceleration);
+    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.000061), racer.speed + racer.acceleration * frameMs + superBoostAcceleration);
     racer.speed *= superBoostActive ? 1.0002 : boostActive || burstWindow > 0 ? 0.999 : 0.997;
     racer.progress = Math.min(1, racer.progress + racer.speed * frameMs);
 
     if (racer.progress >= 1) {
       racer.finished = true;
+      racer.progress = 1;
+      racer.speed = 0;
+      racer.isSuperBoosting = false;
       racer.finishTime = elapsed / 1000;
+      racer.finishRank = race.ranking.length + 1;
+      racer.finishEffectUntil = elapsed + 1450;
       race.ranking = [...race.ranking, racer];
     }
   });
@@ -502,6 +509,11 @@ function tickRace(now) {
     race.racers.forEach((racer) => {
       if (racer.finishTime === null) {
         racer.finishTime = elapsed / 1000 + (1 - racer.progress);
+      }
+      racer.speed = 0;
+      racer.isSuperBoosting = false;
+      if (racer.finishRank === null) {
+        racer.finishRank = race.ranking.length + 1;
       }
       racer.finished = true;
     });
@@ -528,6 +540,15 @@ function isSuperBoostWindow(racer, elapsed) {
 
 function superBoostLabel(racer) {
   return racer.superBoostType === "late" ? "COMEBACK BOOST!" : "SUPER BOOST!";
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = String(hex).replace("#", "");
+  if (normalized.length !== 6) return `rgba(251,146,60,${alpha})`;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function html(strings, ...values) {
@@ -821,8 +842,13 @@ function drawRaceCanvas(now = performance.now()) {
   const laneHeight = Math.max(16, Math.min(58, trackHeight / racers.length));
   const usedHeight = laneHeight * racers.length;
   const top = trackTop + Math.max(0, (trackHeight - usedHeight) / 2);
+  const activeSuperBoost = race.status === "running" && racers.some((racer) => racer.isSuperBoosting);
+  const shakeX = activeSuperBoost ? Math.sin(race.elapsedMs * 0.07) * 2.2 : 0;
+  const shakeY = activeSuperBoost ? Math.cos(race.elapsedMs * 0.093) * 1.2 : 0;
 
   ctx.clearRect(0, 0, width, height);
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
   drawRaceBackground(ctx, width, height, roadOffset, race.status, top - 8, usedHeight + 16, laneHeight);
 
   ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
@@ -837,6 +863,8 @@ function drawRaceCanvas(now = performance.now()) {
 
   drawStartLine(ctx, startX, top - 8, usedHeight + 16);
   drawFinishLine(ctx, finishX, top - 8, usedHeight + 16);
+  drawTrackVignette(ctx, width, height);
+  ctx.restore();
 
   if (countdown && race.status === "countdown") {
     const elapsed = now - race.countdownStartedAt;
@@ -868,6 +896,13 @@ function drawRaceBackground(ctx, width, height, offset, status, trackY, trackHei
     ctx.fillRect(width - x, grassBottom - 18 - (i % 4) * 4, 54, 2);
   }
 
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  for (let i = 0; i < 10; i += 1) {
+    const markerX = ((i * 145 - offset * 0.28) % (width + 160)) - 80;
+    ctx.fillRect(markerX, grassTop + 12, 30, 4);
+    ctx.fillRect(markerX + 12, grassBottom - 18, 34, 4);
+  }
+
   drawGuardRail(ctx, width, trackY - 16, offset, status);
   drawGuardRail(ctx, width, trackY + trackHeight + 12, offset, status);
 
@@ -881,13 +916,28 @@ function drawRaceBackground(ctx, width, height, offset, status, trackY, trackHei
   ctx.fillRect(18, trackY, width - 36, trackHeight);
 
   const textureShift = status === "running" ? offset * 1.25 : offset * 0.08;
-  for (let i = 0; i < 220; i += 1) {
+  for (let i = 0; i < 360; i += 1) {
     const x = (i * 47 - textureShift) % (width + 80);
     const y = trackY + ((i * 31) % Math.max(1, trackHeight));
-    const alpha = 0.05 + (i % 5) * 0.018;
+    const alpha = 0.035 + (i % 6) * 0.014;
     ctx.fillStyle = `rgba(255,255,255,${alpha})`;
     ctx.fillRect(x - 40, y, 2 + (i % 4), 1);
   }
+
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  ctx.strokeStyle = "rgba(15,23,42,0.85)";
+  ctx.lineCap = "round";
+  for (let i = 0; i < 14; i += 1) {
+    const y = trackY + laneHeight * (0.55 + (i % Math.max(1, Math.floor(trackHeight / laneHeight))));
+    const x = (i * 151 - textureShift * 0.55) % (width + 180);
+    ctx.lineWidth = 5 + (i % 3);
+    ctx.beginPath();
+    ctx.moveTo(x - 140, y + Math.sin(i) * 4);
+    ctx.lineTo(x + 36, y + Math.cos(i) * 3);
+    ctx.stroke();
+  }
+  ctx.restore();
 
   ctx.strokeStyle = "rgba(255,255,255,0.78)";
   ctx.lineWidth = Math.max(2, laneHeight * 0.035);
@@ -897,6 +947,20 @@ function drawRaceBackground(ctx, width, height, offset, status, trackY, trackHei
   ctx.moveTo(18, trackY + trackHeight - 2);
   ctx.lineTo(width - 18, trackY + trackHeight - 2);
   ctx.stroke();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(248,250,252,0.18)";
+  ctx.lineWidth = 1;
+  const markerOffset = (status === "running" ? offset * 0.85 : offset * 0.05) % 96;
+  for (let x = 18 - markerOffset; x < width - 18; x += 96) {
+    ctx.beginPath();
+    ctx.moveTo(x, trackY + 9);
+    ctx.lineTo(x + 18, trackY + 9);
+    ctx.moveTo(x + 42, trackY + trackHeight - 10);
+    ctx.lineTo(x + 62, trackY + trackHeight - 10);
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 function drawGuardRail(ctx, width, y, offset, status) {
@@ -918,13 +982,22 @@ function drawGuardRail(ctx, width, y, offset, status) {
   ctx.restore();
 }
 
+function drawTrackVignette(ctx, width, height) {
+  const gradient = ctx.createRadialGradient(width * 0.5, height * 0.5, Math.min(width, height) * 0.2, width * 0.5, height * 0.5, Math.max(width, height) * 0.72);
+  gradient.addColorStop(0, "rgba(0,0,0,0)");
+  gradient.addColorStop(1, "rgba(2,6,23,0.24)");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, width, height);
+}
+
 function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth, offset, elapsedMs) {
   const laneCenter = y + laneHeight / 2;
   const color = colorFor(racer);
   const laneLeft = Math.max(18, startX - labelWidth);
   const laneRight = finishX + 18;
-  const boostActive = racer.boostEndsAt !== null && elapsedMs <= racer.boostEndsAt;
-  const superBoostActive = racer.isSuperBoosting === true;
+  const finished = racer.finished === true;
+  const boostActive = !finished && racer.boostEndsAt !== null && elapsedMs <= racer.boostEndsAt;
+  const superBoostActive = !finished && racer.isSuperBoosting === true;
   const visualBoostActive = boostActive || superBoostActive;
   const boostAge = boostActive ? Math.max(0, elapsedMs - racer.boostStartedAt) : 0;
   const superBoostAge = superBoostActive ? Math.max(0, elapsedMs - (racer.superBoostTriggeredAt ?? elapsedMs)) : 0;
@@ -932,11 +1005,12 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
   const carScale = superBoostActive ? 1.16 + Math.sin(superBoostAge / 42) * 0.06 : boostActive ? 1.08 + Math.sin(boostAge / 48) * 0.05 : 1;
   const carBox = raceCarDimensions(racer, laneHeight, carScale);
   const travelWidth = Math.max(0, finishX - startX - carBox.width);
-  const carX = startX + carBox.width / 2 + travelWidth * racer.progress;
-  const speedRatio = Math.min(1.35, Math.max(0, racer.speed / 0.00017));
-  const vibration = Math.sin(elapsedMs * 0.052 + racer.carNo * 1.9) * Math.min(3.2, speedRatio * 2.15);
-  const foreAftShake = Math.sin(elapsedMs * 0.033 + racer.carNo) * Math.min(2.4, speedRatio * 1.6);
-  const displayCarX = carX + boostPulse + foreAftShake;
+  const finishSettle = finished ? Math.min(18, carBox.width * 0.16) : 0;
+  const carX = startX + carBox.width / 2 + travelWidth * racer.progress + finishSettle;
+  const speedRatio = finished ? 0 : Math.min(1.55, Math.max(0, racer.speed / 0.00017));
+  const vibration = finished ? 0 : Math.sin(elapsedMs * 0.052 + racer.carNo * 1.9) * Math.min(3.2, speedRatio * 2.15);
+  const foreAftShake = finished ? 0 : Math.sin(elapsedMs * 0.033 + racer.carNo) * Math.min(2.4, speedRatio * 1.6);
+  const displayCarX = carX + (finished ? 0 : boostPulse + foreAftShake);
   const displayCarY = laneCenter + vibration;
   const rearX = displayCarX - carBox.width * 0.43;
   const rearY = displayCarY + Math.min(2, laneHeight * 0.04);
@@ -979,8 +1053,18 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
     drawExhaust(ctx, rearX, rearY, color, racer.speed, boostActive, boostPulse, laneHeight, superBoostActive);
   }
 
+  if (visualBoostActive) {
+    drawBoostAura(ctx, displayCarX, displayCarY, carBox, color, boostActive, superBoostActive, laneHeight, elapsedMs);
+  }
+
   drawCar(ctx, displayCarX, displayCarY, laneHeight, color, carScale, racer, visualBoostActive, carBox);
-  drawWheelSpin(ctx, displayCarX, displayCarY, carBox, speedRatio, elapsedMs, laneHeight);
+  if (!finished) {
+    drawWheelSpin(ctx, displayCarX, displayCarY, carBox, speedRatio, elapsedMs, laneHeight);
+  }
+
+  if (finished && racer.finishEffectUntil !== null && elapsedMs <= racer.finishEffectUntil) {
+    drawFinishEffect(ctx, finishX, displayCarY, racer.finishRank ?? 0, elapsedMs, racer.finishEffectUntil, laneHeight);
+  }
 
   if (racer.superBoostLabelUntil !== null && elapsedMs <= racer.superBoostLabelUntil) {
     const labelAlpha = Math.max(0, (racer.superBoostLabelUntil - elapsedMs) / 1200);
@@ -997,23 +1081,59 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
     ctx.save();
     ctx.globalAlpha = labelAlpha;
     ctx.fillStyle = "#fdba74";
+    ctx.shadowColor = "#fb923c";
+    ctx.shadowBlur = 10;
     ctx.font = `900 ${Math.max(12, Math.min(22, laneHeight * 0.36))}px system-ui`;
     ctx.fillText("BOOST!", Math.min(finishX - 86, displayCarX + carBox.width * 0.34), displayCarY - laneHeight * 0.25);
     ctx.restore();
   }
 }
 
+function drawBoostAura(ctx, x, y, carBox, color, boostActive, superBoostActive, laneHeight, elapsedMs) {
+  ctx.save();
+  const pulse = superBoostActive ? 1 + Math.sin(elapsedMs * 0.045) * 0.11 : 1 + Math.sin(elapsedMs * 0.038) * 0.06;
+  const auraWidth = carBox.width * (superBoostActive ? 1.34 : 1.08) * pulse;
+  const auraHeight = carBox.height * (superBoostActive ? 1.42 : 1.14) * pulse;
+  const gradient = ctx.createRadialGradient(x, y, Math.max(4, auraHeight * 0.1), x, y, Math.max(auraWidth, auraHeight));
+  if (superBoostActive) {
+    gradient.addColorStop(0, "rgba(254,240,138,0.34)");
+    gradient.addColorStop(0.38, "rgba(56,189,248,0.18)");
+    gradient.addColorStop(1, "rgba(56,189,248,0)");
+  } else if (boostActive) {
+    gradient.addColorStop(0, `${hexToRgba(color, 0.3)}`);
+    gradient.addColorStop(0.52, "rgba(251,146,60,0.16)");
+    gradient.addColorStop(1, "rgba(251,146,60,0)");
+  }
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.ellipse(x - carBox.width * 0.08, y, auraWidth * 0.54, auraHeight * 0.52, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (superBoostActive) {
+    ctx.globalAlpha = 0.42;
+    ctx.strokeStyle = "#fef08a";
+    ctx.lineWidth = Math.max(1, laneHeight * 0.018);
+    ctx.setLineDash([Math.max(5, laneHeight * 0.16), Math.max(6, laneHeight * 0.14)]);
+    ctx.lineDashOffset = -elapsedMs * 0.08;
+    ctx.beginPath();
+    ctx.ellipse(x - carBox.width * 0.08, y, auraWidth * 0.48, auraHeight * 0.46, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
 function drawRoadDust(ctx, rearX, y, speedRatio, elapsedMs, laneHeight) {
   if (speedRatio <= 0.08) return;
 
   ctx.save();
-  const particleCount = Math.min(7, Math.max(2, Math.round(speedRatio * 5)));
+  const particleCount = Math.min(9, Math.max(3, Math.round(speedRatio * 6)));
   for (let i = 0; i < particleCount; i += 1) {
     const drift = (elapsedMs * (0.018 + i * 0.004) + i * 23) % Math.max(24, laneHeight * 1.6);
     const x = rearX - 8 - drift - i * 8;
     const yy = y + laneHeight * 0.23 + Math.sin(elapsedMs * 0.01 + i) * laneHeight * 0.08;
     const radius = Math.max(1, laneHeight * (0.025 + i * 0.003));
-    ctx.fillStyle = `rgba(203, 213, 225, ${Math.max(0.04, 0.2 - i * 0.022) * speedRatio})`;
+    ctx.fillStyle = `rgba(203, 213, 225, ${Math.max(0.05, 0.24 - i * 0.024) * speedRatio})`;
     ctx.beginPath();
     ctx.arc(x, yy, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -1021,18 +1141,56 @@ function drawRoadDust(ctx, rearX, y, speedRatio, elapsedMs, laneHeight) {
   ctx.restore();
 }
 
+function drawFinishEffect(ctx, finishX, y, rank, elapsedMs, effectUntil, laneHeight) {
+  const remaining = Math.max(0, effectUntil - elapsedMs);
+  const alpha = Math.min(1, remaining / 950);
+  const flash = 0.55 + Math.sin(elapsedMs * 0.05) * 0.25;
+  const badgeText = rank > 0 ? `#${rank}` : "FIN";
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = `rgba(250,204,21,${0.18 + flash * 0.18})`;
+  ctx.fillRect(finishX - 18, y - laneHeight * 0.44, 48, laneHeight * 0.88);
+
+  const cell = Math.max(4, Math.min(8, laneHeight * 0.12));
+  for (let row = 0; row < 4; row += 1) {
+    for (let col = 0; col < 5; col += 1) {
+      ctx.fillStyle = (row + col) % 2 === 0 ? `rgba(248,250,252,${0.72 * alpha})` : `rgba(2,6,23,${0.82 * alpha})`;
+      ctx.fillRect(finishX + 10 + col * cell, y - laneHeight * 0.34 + row * cell, cell, cell);
+    }
+  }
+
+  ctx.fillStyle = "#fef08a";
+  ctx.shadowColor = "#facc15";
+  ctx.shadowBlur = 16;
+  ctx.font = `900 ${Math.max(10, Math.min(18, laneHeight * 0.32))}px system-ui`;
+  ctx.fillText("FINISH!", finishX - Math.min(86, laneHeight * 1.55), y - laneHeight * 0.18);
+
+  ctx.fillStyle = "rgba(2,6,23,0.78)";
+  roundedRect(ctx, finishX - Math.min(70, laneHeight * 1.28), y + laneHeight * 0.02, Math.max(34, laneHeight * 0.82), Math.max(16, laneHeight * 0.3), 999);
+  ctx.fill();
+  ctx.fillStyle = "#f8fafc";
+  ctx.font = `900 ${Math.max(9, Math.min(16, laneHeight * 0.28))}px system-ui`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(badgeText, finishX - Math.min(53, laneHeight * 0.96), y + laneHeight * 0.17);
+  ctx.restore();
+  ctx.textAlign = "start";
+  ctx.textBaseline = "alphabetic";
+}
+
 function drawMotionStreaks(ctx, rearX, y, color, speedRatio, boostActive, laneHeight, superBoostActive = false) {
   if (speedRatio <= 0.1) return;
 
-  const count = superBoostActive ? 8 : boostActive ? 5 : 3;
+  const count = superBoostActive ? 9 : boostActive ? 6 : 3;
   ctx.save();
   ctx.lineCap = "round";
   for (let i = 0; i < count; i += 1) {
-    const length = laneHeight * ((superBoostActive ? 1.35 : 0.75) + speedRatio * (superBoostActive ? 2.35 : 1.35) + i * 0.28);
+    const length = laneHeight * ((superBoostActive ? 1.55 : boostActive ? 1.05 : 0.75) + speedRatio * (superBoostActive ? 2.65 : boostActive ? 1.7 : 1.35) + i * 0.28);
     const yy = y - laneHeight * 0.22 + i * laneHeight * 0.14;
-    ctx.strokeStyle = superBoostActive ? (i % 2 === 0 ? "#fef08a" : "#38bdf8") : boostActive ? color : `rgba(226,232,240,${0.13 + speedRatio * 0.11})`;
-    ctx.globalAlpha = superBoostActive ? 0.5 : boostActive ? 0.35 : 0.42;
-    ctx.lineWidth = Math.max(1, laneHeight * ((superBoostActive ? 0.024 : 0.018) + i * 0.003));
+    ctx.strokeStyle = superBoostActive ? (i % 2 === 0 ? "#fef08a" : "#38bdf8") : boostActive ? (i % 2 === 0 ? color : "#fb923c") : `rgba(226,232,240,${0.13 + speedRatio * 0.11})`;
+    ctx.globalAlpha = superBoostActive ? 0.56 : boostActive ? 0.46 : 0.42;
+    ctx.lineWidth = Math.max(1, laneHeight * ((superBoostActive ? 0.026 : boostActive ? 0.022 : 0.018) + i * 0.003));
     ctx.beginPath();
     ctx.moveTo(rearX - 4, yy);
     ctx.lineTo(rearX - length, yy + Math.sin(i) * laneHeight * 0.03);
@@ -1064,18 +1222,18 @@ function drawWheelSpin(ctx, x, y, carBox, speedRatio, elapsedMs, laneHeight) {
 }
 
 function drawExhaust(ctx, rearX, laneCenter, color, speed, boostActive, boostPulse, laneHeight, superBoostActive = false) {
-  const trailLength = superBoostActive ? 128 + speed * 680000 : boostActive ? 82 + speed * 430000 : 30 + speed * 170000;
-  const flameHeight = superBoostActive ? Math.max(10, laneHeight * 0.34) : boostActive ? Math.max(7, laneHeight * 0.22) : Math.max(3, laneHeight * 0.11);
+  const trailLength = superBoostActive ? 150 + speed * 760000 : boostActive ? 104 + speed * 520000 : 30 + speed * 170000;
+  const flameHeight = superBoostActive ? Math.max(11, laneHeight * 0.38) : boostActive ? Math.max(8, laneHeight * 0.28) : Math.max(3, laneHeight * 0.11);
   const gradient = ctx.createLinearGradient(rearX - trailLength, laneCenter, rearX, laneCenter);
   gradient.addColorStop(0, superBoostActive ? "rgba(56, 189, 248, 0)" : "rgba(249, 115, 22, 0)");
-  gradient.addColorStop(0.24, superBoostActive ? "rgba(56, 189, 248, 0.42)" : boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
-  gradient.addColorStop(0.62, superBoostActive ? "rgba(254, 240, 138, 0.48)" : boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
+  gradient.addColorStop(0.24, superBoostActive ? "rgba(56, 189, 248, 0.48)" : boostActive ? "rgba(249, 115, 22, 0.48)" : "rgba(148, 163, 184, 0.18)");
+  gradient.addColorStop(0.62, superBoostActive ? "rgba(254, 240, 138, 0.56)" : boostActive ? "rgba(253, 186, 116, 0.42)" : "rgba(148, 163, 184, 0.18)");
   gradient.addColorStop(1, superBoostActive ? "#fef08a" : boostActive ? color : "rgba(226,232,240,0.32)");
 
   ctx.save();
   ctx.fillStyle = gradient;
   ctx.shadowColor = superBoostActive ? "#facc15" : boostActive ? "#fb923c" : color;
-  ctx.shadowBlur = superBoostActive ? 42 : boostActive ? 26 : 10;
+  ctx.shadowBlur = superBoostActive ? 50 : boostActive ? 34 : 10;
   ctx.beginPath();
   ctx.moveTo(rearX, laneCenter - flameHeight * 0.45);
   ctx.lineTo(rearX - trailLength, laneCenter - flameHeight + boostPulse);

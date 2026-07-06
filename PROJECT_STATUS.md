@@ -12,6 +12,14 @@
 
 ## Latest Update - 2026-07-06
 
+- Fixed Lobby car photo fitting so all 10 real vehicle images render fully inside the compact card preview area without cropping or aspect-ratio distortion.
+- Kept the mobile landscape Lobby at a stable `5 x 2` card grid while tuning preview padding, image max-height, and `object-fit: contain`.
+- Strengthened normal boost visuals with longer rear flames, clearer orange speed streaks, stronger glow, more dust particles, and higher-contrast `BOOST!` labels.
+- Strengthened super boost visuals with screen shake, larger aura, longer cyan/yellow trails, stronger flame glow, and distinct `SUPER BOOST!` / `COMEBACK BOOST!` labels.
+- Improved the drag strip background with extra asphalt speckles, rubber/skid marks, road-edge markers, grass markers, guardrails, START, and checkered FINISH detail.
+- Added finish-state handling so finished cars stop speed, wheel-spin, vibration, and boost state instead of continuing to shake or slide.
+- Added finish-line feedback with `FINISH!`, rank badges, checkered flash blocks, and short yellow flash effects while the rest of the race continues.
+- Retuned race pacing after the stronger effects so browser-tested races still finish around the 8-10 second target range.
 - Made the mobile landscape Lobby fit 10 car cards in a fixed `5 x 2` compact grid inside `100dvh`.
 - Restored wheel/touch vertical scrolling for the landscape Lobby when browser UI or small device height reduces the available viewport.
 - Removed the landscape body overflow lock and kept overflow hidden scoped to the Race screen, so Lobby can receive wheel/touch scroll.
@@ -76,6 +84,9 @@
 - `assets/cars/car-01.webp` through `assets/cars/car-10.webp`
 - Reaction delay, acceleration, nitro, surge pulses, lane progress, finish ranking
 - Moving road stripes, track markers, speed lines, exhaust trails, boost glow, road dust, motion streaks, wheel spin arcs, and checkered finish line
+- Stronger normal boost rendering with visible flame, dust, speed streaks, glow, and `BOOST!` canvas label
+- Distinct super boost rendering with screen shake, aura, long trails, stronger glow, and early/comeback labels
+- Finish-line effects that stop finished racer motion and show `FINISH!`, rank badge, flash, and checkered blocks
 - Race variance events: launch quality, mid-race surge, short burst, slowdown/recovery, and 1-2 super boost cars per race
 - Super boost racer state fields: `superBoostType`, `superBoostStart`, `superBoostEnd`, `superBoostMultiplier`, and `isSuperBoosting`
 - Result screen showing winner and today's drink buyer as last place
@@ -83,12 +94,20 @@
 ## Verification
 
 - JavaScript syntax checked with `node --check src/app.js`.
+- Latest JavaScript syntax check passed after Lobby image-fit, boost, finish, and background polish.
+- `git diff --check` passed with only expected CRLF working-copy warnings.
+- Browser verification completed through the in-app browser at mobile landscape `852 x 393`.
+- Browser Lobby check at `852 x 393` confirmed 10 cards render as `5 x 2`, all 10 `.car-photo` images are complete, every image stays within its preview box, vertical overflow is `0`, and nickname/random controls remain absent.
+- Browser Race checks for 2, 4, 6, and 10 selected cars reached Result successfully with the correct ranking row count and drink-buyer display.
+- Browser timing retest at `852 x 393`: 2-car race finished from `8.14s` to `8.54s`, 4-car race from `8.31s` to `9.10s`, 6-car race from `8.08s` to `9.34s`, and 10-car race from `8.03s` to `10.07s`.
+- Browser canvas checks confirmed normal `BOOST!` labels, stronger orange rear flames/streaks, visible super boost aura/trails/labels, and finish-line `FINISH!` rank flashes.
+- Browser Race canvas checks confirmed `852 x 393` canvas size, Race vertical overflow `0`, no right-side dashboard, and no console errors.
 - Latest JavaScript syntax check passed after fixed vehicle-name Lobby and super boost changes.
 - Local VM smoke test confirmed Lobby HTML no longer contains `<input>`, `data-player-name`, `data-reroll`, or `random-all`, and that car cards render the fixed `.car-name` element.
 - Local VM smoke test confirmed selected racers no longer carry a user-editable `name` field.
 - Local VM tests for 2, 6, and 10 selected cars confirmed each race creates 1-2 super boost cars and includes the requested super boost state fields.
 - Local race-loop simulation for 2, 6, and 10 selected cars produced finishes around the 8-10 second target range, with some tail results slightly above 10 seconds depending on variance.
-- Browser verification for this update could not be completed because the browser automation policy blocked both `127.0.0.1` and local `file://` navigation for this workspace.
+- Browser verification is now available and was completed against `http://127.0.0.1:5174/index.html`.
 - Static HTTP smoke test returned `200 text/html` for `index.html`.
 - Browser flow tested for 2, 4, 6, and 10 cars through Lobby, Launch, Race, and Result.
 - Browser Race checks retested for 2 selected cars, 5 selected cars, and 10 selected cars at mobile landscape `852 x 393`.
