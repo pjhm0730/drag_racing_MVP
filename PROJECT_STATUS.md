@@ -27,7 +27,11 @@
 - Converted the Race header to a small overlay so the canvas can occupy essentially the full viewport.
 - Reduced race car render size by roughly 15-25% and scaled exhaust/boost trails with lane height.
 - Race canvas now draws the loaded WebP car photos first and keeps dependency-free vector drawings as image-load fallback.
-- Simplified the visible numbering system so users only see fixed car numbers: `Car #1` through `Car #10`.
+- Added `flipInRace` vehicle metadata and a `drawCarImage(..., flipX)` canvas helper so Race-only car photos face the right-side FINISH direction.
+- Adjusted boost/exhaust origin to the left rear of the right-facing car image.
+- Replaced the dark abstract Race background with a 2D asphalt drag strip: road texture, white lane dividers, guardrails, grass edges, START line, and checkered FINISH line.
+- Updated Race, Launch, and Result labels to prioritize actual vehicle names such as `싼타페`, `그랜저`, and `맥라렌 720S` instead of `Car #1` / `1번 자동차` style names.
+- Simplified the visible numbering system so users see compact fixed car numbers: `#1` through `#10`.
 - Kept `selectedOrder` only as internal selection tracking for lane assignment; pick order is no longer shown in Lobby, Launch, Canvas, or Result.
 - Reworded UI labels away from pick-order language and toward car identity language such as `Car #5` and `5번 자동차`.
 - Reworked the Race screen for mobile landscape with a compact `100dvw x 100dvh` layout.
@@ -55,8 +59,11 @@
 - Mobile landscape Lobby grid can scroll by wheel/touch when the viewport is shorter than the fully fitted layout
 - Canvas-only Race screen without the previous right-side dashboard
 - Real car photo asset system managed by `CAR_DEFS`
+- Race-only car image flipping with `flipInRace`
 - Lobby photo previews with SVG fallback
 - Race canvas car photo rendering with vector fallback
+- Asphalt road-style Race background with guardrails, grass, lane dividers, START, and checkered FINISH
+- Actual vehicle model names displayed in Launch, Race lane labels, and Result
 - `assets/cars/car-01.webp` through `assets/cars/car-10.webp`
 - Reaction delay, acceleration, nitro, surge pulses, lane progress, finish ranking
 - Moving road stripes, track markers, speed lines, exhaust trails, boost glow, and checkered finish line
@@ -67,6 +74,10 @@
 - JavaScript syntax checked with `node --check src/app.js`.
 - Static HTTP smoke test returned `200 text/html` for `index.html`.
 - Browser flow tested for 2, 4, 6, and 10 cars through Lobby, Launch, Race, and Result.
+- Browser Race checks retested for 2 selected cars, 5 selected cars, and 10 selected cars at mobile landscape `852 x 393`.
+- Race visual check confirmed car photos face right toward FINISH and remain centered inside their lanes.
+- Boost visual check confirmed flame/trail renders from the left rear of the right-facing car.
+- Browser checks confirmed Launch labels no longer show old `Car #` / `1번 자동차` style names.
 - Mobile landscape viewport `852 x 393` tested with 10 cars: Lobby cards fit as 5 columns x 2 rows, all 10 car images loaded, and vertical overflow was `0`.
 - Max-select test at `852 x 393`: with max set to 4, selected Car #1, #2, #3, and #5; unselected cars locked, Car #6 click was blocked, and Launch showed exactly 4 selected cars.
 - Short mobile landscape viewport `852 x 320` tested with 10 cars: Lobby remained 5 columns x 2 rows and player-grid wheel scroll moved from `scrollTop 0` to `scrollTop 58`.

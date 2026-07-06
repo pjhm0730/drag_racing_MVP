@@ -17,6 +17,7 @@ const CAR_DEFS = [
     name: "싼타페",
     label: "2026 싼타페",
     image: "./assets/cars/car-01.webp",
+    flipInRace: true,
     color: "#e5e7eb",
     width: 1.04,
     height: 1.08,
@@ -32,6 +33,7 @@ const CAR_DEFS = [
     name: "그랜저",
     label: "2027 그랜저",
     image: "./assets/cars/car-02.webp",
+    flipInRace: true,
     color: "#111827",
     width: 1.2,
     height: 0.9,
@@ -47,6 +49,7 @@ const CAR_DEFS = [
     name: "캐스퍼",
     label: "2026 캐스퍼",
     image: "./assets/cars/car-03.webp",
+    flipInRace: true,
     color: "#f8fafc",
     width: 0.95,
     height: 1.08,
@@ -62,6 +65,7 @@ const CAR_DEFS = [
     name: "쏘렌토",
     label: "2026 쏘렌토",
     image: "./assets/cars/car-04.webp",
+    flipInRace: true,
     color: "#f1f5f9",
     width: 1.08,
     height: 1.06,
@@ -77,6 +81,7 @@ const CAR_DEFS = [
     name: "맥라렌 720S",
     label: "2026 맥라렌 720S",
     image: "./assets/cars/car-05.webp",
+    flipInRace: true,
     color: "#f97316",
     width: 1.18,
     height: 0.62,
@@ -92,6 +97,7 @@ const CAR_DEFS = [
     name: "모닝",
     label: "2025 모닝",
     image: "./assets/cars/car-06.webp",
+    flipInRace: true,
     color: "#d1d5db",
     width: 0.84,
     height: 0.82,
@@ -107,6 +113,7 @@ const CAR_DEFS = [
     name: "BMW M3",
     label: "2026 BMW M3",
     image: "./assets/cars/car-07.webp",
+    flipInRace: true,
     color: "#22c55e",
     width: 1.12,
     height: 0.72,
@@ -122,6 +129,7 @@ const CAR_DEFS = [
     name: "벤츠 G클래스",
     label: "2026 벤츠 G클래스",
     image: "./assets/cars/car-08.webp",
+    flipInRace: true,
     color: "#1d4ed8",
     width: 0.98,
     height: 1.16,
@@ -137,6 +145,7 @@ const CAR_DEFS = [
     name: "쌍용 코란도 하이 디럭스",
     label: "1992 코란도 하이 디럭스",
     image: "./assets/cars/car-09.webp",
+    flipInRace: true,
     color: "#0f172a",
     width: 1,
     height: 1.14,
@@ -152,6 +161,7 @@ const CAR_DEFS = [
     name: "테슬라 모델 S",
     label: "2025 테슬라 모델 S",
     image: "./assets/cars/car-10.webp",
+    flipInRace: true,
     color: "#3b82f6",
     width: 1.2,
     height: 0.74,
@@ -197,7 +207,7 @@ const DEFAULT_STATE = {
     id: `player-${index + 1}`,
     carNo: index + 1,
     carType: CAR_DEFS[index]?.id ?? CAR_DEFS[0].id,
-    name: `${index + 1}번 자동차`,
+    name: CAR_DEFS[index]?.name ?? `자동차 #${index + 1}`,
     selectedOrder: null,
     reactionMs: 0,
     finishTime: null,
@@ -260,11 +270,15 @@ function colorFor(player) {
 }
 
 function carHash(player) {
-  return `Car #${player.carNo}`;
+  return `#${player.carNo}`;
 }
 
 function carDefFor(player) {
   return CAR_DEFS.find((car) => car.id === player.carType) ?? CAR_DEFS[(player.carNo - 1) % CAR_DEFS.length];
+}
+
+function carDisplayName(player) {
+  return carDefFor(player).name;
 }
 
 function randomName(carNo) {
@@ -706,7 +720,7 @@ function renderLaunch() {
             return html`
               <article class="lane-card" style="--player-color: ${colorFor(racer)}">
                 <span>${carHash(racer)} · ${escapeHtml(carDef.label)}</span>
-                <strong>${escapeHtml(racer.name)}</strong>
+                <strong>${escapeHtml(carDisplayName(racer))}</strong>
                 <small>반응속도 예상 ${racer.reactionMs || Math.round(180 + Math.random() * 520)}ms</small>
               </article>
             `;
@@ -792,7 +806,7 @@ function drawRaceCanvas(now = performance.now()) {
   const top = trackTop + Math.max(0, (trackHeight - usedHeight) / 2);
 
   ctx.clearRect(0, 0, width, height);
-  drawRaceBackground(ctx, width, height, roadOffset, race.status);
+  drawRaceBackground(ctx, width, height, roadOffset, race.status, top - 8, usedHeight + 16, laneHeight);
 
   ctx.fillStyle = "rgba(248, 250, 252, 0.92)";
   ctx.font = `${Math.max(14, Math.min(24, height * 0.045))}px system-ui`;
@@ -816,49 +830,75 @@ function drawRaceCanvas(now = performance.now()) {
   }
 }
 
-function drawRaceBackground(ctx, width, height, offset, status) {
-  const gradient = ctx.createLinearGradient(0, 0, width, height);
-  gradient.addColorStop(0, "#18202d");
-  gradient.addColorStop(0.48, "#101722");
-  gradient.addColorStop(1, "#050915");
-  ctx.fillStyle = gradient;
+function drawRaceBackground(ctx, width, height, offset, status, trackY, trackHeight, laneHeight) {
+  const sky = ctx.createLinearGradient(0, 0, 0, height);
+  sky.addColorStop(0, "#172033");
+  sky.addColorStop(0.46, "#233047");
+  sky.addColorStop(1, "#101827");
+  ctx.fillStyle = sky;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.fillStyle = "rgba(15, 23, 42, 0.84)";
-  ctx.fillRect(18, 28, width - 36, height - 48);
+  const grassTop = Math.max(0, trackY - 34);
+  const grassBottom = Math.min(height, trackY + trackHeight + 34);
+  ctx.fillStyle = "#24451f";
+  ctx.fillRect(0, grassTop, width, Math.max(0, trackY - grassTop));
+  ctx.fillRect(0, trackY + trackHeight, width, Math.max(0, grassBottom - trackY - trackHeight));
 
-  const gridOffset = offset % 58;
-  ctx.strokeStyle = status === "running" ? "rgba(148, 163, 184, 0.12)" : "rgba(148, 163, 184, 0.06)";
-  ctx.lineWidth = 1;
-  for (let x = -58 + gridOffset; x < width + 80; x += 58) {
-    ctx.beginPath();
-    ctx.moveTo(x, 28);
-    ctx.lineTo(x - 100, height - 20);
-    ctx.stroke();
+  ctx.fillStyle = "rgba(132, 204, 22, 0.18)";
+  for (let i = 0; i < 34; i += 1) {
+    const x = (i * 83 - offset * 0.16) % (width + 90);
+    ctx.fillRect(x - 30, grassTop + 6 + (i % 3) * 6, 42, 2);
+    ctx.fillRect(width - x, grassBottom - 18 - (i % 4) * 4, 54, 2);
   }
 
-  const markerOffset = offset % 180;
-  for (let x = width + 80 - markerOffset; x > -120; x -= 180) {
-    ctx.fillStyle = "rgba(253, 186, 116, 0.22)";
-    ctx.fillRect(x, 40, 20, height - 78);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
-    ctx.beginPath();
-    ctx.arc(x + 10, 38, 5, 0, Math.PI * 2);
-    ctx.fill();
+  drawGuardRail(ctx, width, trackY - 16, offset, status);
+  drawGuardRail(ctx, width, trackY + trackHeight + 12, offset, status);
+
+  const road = ctx.createLinearGradient(0, trackY, 0, trackY + trackHeight);
+  road.addColorStop(0, "#5b6472");
+  road.addColorStop(0.08, "#394150");
+  road.addColorStop(0.5, "#252b34");
+  road.addColorStop(0.92, "#363d49");
+  road.addColorStop(1, "#626b78");
+  ctx.fillStyle = road;
+  ctx.fillRect(18, trackY, width - 36, trackHeight);
+
+  const textureShift = status === "running" ? offset * 1.25 : offset * 0.08;
+  for (let i = 0; i < 220; i += 1) {
+    const x = (i * 47 - textureShift) % (width + 80);
+    const y = trackY + ((i * 31) % Math.max(1, trackHeight));
+    const alpha = 0.05 + (i % 5) * 0.018;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(x - 40, y, 2 + (i % 4), 1);
   }
 
-  if (status === "running") {
-    ctx.strokeStyle = "rgba(248, 250, 252, 0.18)";
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 16; i += 1) {
-      const y = 58 + ((i * 47 + offset * 0.7) % Math.max(80, height - 100));
-      const x = width - ((i * 127 + offset * 1.8) % (width + 240));
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - 90 - (i % 4) * 22, y);
-      ctx.stroke();
-    }
+  ctx.strokeStyle = "rgba(255,255,255,0.78)";
+  ctx.lineWidth = Math.max(2, laneHeight * 0.035);
+  ctx.beginPath();
+  ctx.moveTo(18, trackY + 2);
+  ctx.lineTo(width - 18, trackY + 2);
+  ctx.moveTo(18, trackY + trackHeight - 2);
+  ctx.lineTo(width - 18, trackY + trackHeight - 2);
+  ctx.stroke();
+}
+
+function drawGuardRail(ctx, width, y, offset, status) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(226,232,240,0.68)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(width, y);
+  ctx.moveTo(0, y + 8);
+  ctx.lineTo(width, y + 8);
+  ctx.stroke();
+
+  const postOffset = (status === "running" ? offset * 0.58 : offset * 0.05) % 120;
+  ctx.fillStyle = "rgba(148,163,184,0.55)";
+  for (let x = width + 40 - postOffset; x > -80; x -= 120) {
+    ctx.fillRect(x, y - 5, 8, 20);
   }
+  ctx.restore();
 }
 
 function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth, offset, elapsedMs) {
@@ -866,44 +906,53 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
   const color = colorFor(racer);
   const laneLeft = Math.max(18, startX - labelWidth);
   const laneRight = finishX + 18;
-  const carX = startX + (finishX - startX) * racer.progress;
   const boostActive = racer.boostEndsAt !== null && elapsedMs <= racer.boostEndsAt;
   const boostAge = boostActive ? Math.max(0, elapsedMs - racer.boostStartedAt) : 0;
   const boostPulse = boostActive ? Math.sin(boostAge / 36) * 2.4 : 0;
   const carScale = boostActive ? 1.08 + Math.sin(boostAge / 48) * 0.05 : 1;
+  const carBox = raceCarDimensions(racer, laneHeight, carScale);
+  const travelWidth = Math.max(0, finishX - startX - carBox.width);
+  const carX = startX + carBox.width / 2 + travelWidth * racer.progress;
+  const displayCarX = carX + boostPulse;
+  const rearX = displayCarX - carBox.width * 0.43;
   const compactLane = laneHeight < 34;
+  const carDef = carDefFor(racer);
 
-  ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.052)" : "rgba(255,255,255,0.082)";
+  ctx.fillStyle = index % 2 === 0 ? "rgba(255,255,255,0.035)" : "rgba(255,255,255,0.058)";
   ctx.fillRect(laneLeft, y + 1, laneRight - laneLeft, laneHeight - 2);
 
   const stripeOffset = offset % 76;
-  ctx.strokeStyle = "rgba(255,255,255,0.26)";
-  ctx.setLineDash([24, 24]);
+  ctx.strokeStyle = "rgba(248,250,252,0.55)";
+  ctx.setLineDash([34, 28]);
   ctx.lineDashOffset = -stripeOffset;
-  ctx.lineWidth = Math.max(1, laneHeight * 0.025);
+  ctx.lineWidth = Math.max(1, laneHeight * 0.035);
   ctx.beginPath();
-  ctx.moveTo(startX + 14, y + laneHeight - 2);
+  ctx.moveTo(startX + 14, y + laneHeight - 1);
   ctx.lineTo(finishX - 16, y + laneHeight - 2);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.lineDashOffset = 0;
 
-  ctx.fillStyle = "rgba(226,232,240,0.9)";
-  ctx.font = `800 ${Math.max(11, Math.min(16, laneHeight * 0.27))}px system-ui`;
+  ctx.fillStyle = "rgba(2,6,23,0.38)";
+  roundedRect(ctx, laneLeft + 4, y + Math.max(3, laneHeight * 0.08), labelWidth - 10, Math.max(26, laneHeight * 0.78), 6);
+  ctx.fill();
+
+  ctx.fillStyle = "rgba(248,250,252,0.94)";
+  ctx.font = `900 ${Math.max(10, Math.min(15, laneHeight * 0.27))}px system-ui`;
   ctx.textBaseline = "middle";
-  ctx.fillText(carHash(racer), laneLeft + 10, compactLane ? laneCenter : laneCenter - Math.min(9, laneHeight * 0.12));
+  ctx.fillText(trimCanvasText(carDef.name, compactLane ? 8 : 11), laneLeft + 10, compactLane ? laneCenter : laneCenter - Math.min(9, laneHeight * 0.12));
 
   if (!compactLane) {
-    ctx.fillStyle = "rgba(226,232,240,0.62)";
+    ctx.fillStyle = "rgba(226,232,240,0.72)";
     ctx.font = `600 ${Math.max(10, Math.min(14, laneHeight * 0.24))}px system-ui`;
-    ctx.fillText(trimCanvasText(racer.name, 13), laneLeft + 10, laneCenter + Math.min(11, laneHeight * 0.22));
+    ctx.fillText(carHash(racer), laneLeft + 10, laneCenter + Math.min(11, laneHeight * 0.22));
   }
 
   if (racer.speed > 0 && !racer.finished) {
-    drawExhaust(ctx, carX, laneCenter, color, racer.speed, boostActive, boostPulse, laneHeight);
+    drawExhaust(ctx, rearX, laneCenter, color, racer.speed, boostActive, boostPulse, laneHeight);
   }
 
-  drawCar(ctx, carX + boostPulse, laneCenter, laneHeight, color, carScale, racer, boostActive);
+  drawCar(ctx, displayCarX, laneCenter, laneHeight, color, carScale, racer, boostActive, carBox);
 
   if (racer.boostLabelUntil !== null && elapsedMs <= racer.boostLabelUntil) {
     const labelAlpha = Math.max(0, (racer.boostLabelUntil - elapsedMs) / 900);
@@ -911,16 +960,15 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
     ctx.globalAlpha = labelAlpha;
     ctx.fillStyle = "#fdba74";
     ctx.font = `900 ${Math.max(12, Math.min(22, laneHeight * 0.36))}px system-ui`;
-    ctx.fillText("BOOST!", Math.min(finishX - 86, carX + 46), laneCenter - laneHeight * 0.25);
+    ctx.fillText("BOOST!", Math.min(finishX - 86, displayCarX + carBox.width * 0.34), laneCenter - laneHeight * 0.25);
     ctx.restore();
   }
 }
 
-function drawExhaust(ctx, carX, laneCenter, color, speed, boostActive, boostPulse, laneHeight) {
-  const nozzleOffset = Math.max(18, Math.min(30, laneHeight * 0.42));
+function drawExhaust(ctx, rearX, laneCenter, color, speed, boostActive, boostPulse, laneHeight) {
   const trailLength = boostActive ? 82 + speed * 430000 : 30 + speed * 170000;
   const flameHeight = boostActive ? Math.max(7, laneHeight * 0.22) : Math.max(3, laneHeight * 0.11);
-  const gradient = ctx.createLinearGradient(carX - trailLength, laneCenter, carX - nozzleOffset, laneCenter);
+  const gradient = ctx.createLinearGradient(rearX - trailLength, laneCenter, rearX, laneCenter);
   gradient.addColorStop(0, "rgba(249, 115, 22, 0)");
   gradient.addColorStop(0.3, boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
   gradient.addColorStop(1, boostActive ? color : "rgba(226,232,240,0.32)");
@@ -930,26 +978,45 @@ function drawExhaust(ctx, carX, laneCenter, color, speed, boostActive, boostPuls
   ctx.shadowColor = boostActive ? "#fb923c" : color;
   ctx.shadowBlur = boostActive ? 26 : 10;
   ctx.beginPath();
-  ctx.moveTo(carX - nozzleOffset, laneCenter - flameHeight * 0.45);
-  ctx.lineTo(carX - trailLength, laneCenter - flameHeight + boostPulse);
-  ctx.lineTo(carX - trailLength * 0.72, laneCenter);
-  ctx.lineTo(carX - trailLength, laneCenter + flameHeight - boostPulse);
-  ctx.lineTo(carX - nozzleOffset, laneCenter + flameHeight * 0.45);
+  ctx.moveTo(rearX, laneCenter - flameHeight * 0.45);
+  ctx.lineTo(rearX - trailLength, laneCenter - flameHeight + boostPulse);
+  ctx.lineTo(rearX - trailLength * 0.72, laneCenter);
+  ctx.lineTo(rearX - trailLength, laneCenter + flameHeight - boostPulse);
+  ctx.lineTo(rearX, laneCenter + flameHeight * 0.45);
   ctx.closePath();
   ctx.fill();
   ctx.restore();
 }
 
-function drawCar(ctx, x, y, laneHeight, color, scale, racer, boostActive) {
+function raceCarDimensions(racer, laneHeight, scale) {
   const carDef = carDefFor(racer);
   const carImage = loadedCarImage(carDef);
   if (carImage) {
-    drawCarPhoto(ctx, x, y, laneHeight, color, scale, racer, boostActive, carImage, carDef);
+    const height = Math.max(24, Math.min(52, laneHeight * 0.9)) * scale;
+    return {
+      width: height * (carImage.naturalWidth / carImage.naturalHeight) * (carDef.photoScale ?? 1),
+      height,
+      image: carImage,
+    };
+  }
+
+  return {
+    width: Math.max(34, Math.min(68, laneHeight * 1.05)) * carDef.width * scale,
+    height: Math.max(12, Math.min(24, laneHeight * 0.36)) * carDef.height * scale,
+    image: null,
+  };
+}
+
+function drawCar(ctx, x, y, laneHeight, color, scale, racer, boostActive, carBox = raceCarDimensions(racer, laneHeight, scale)) {
+  const carDef = carDefFor(racer);
+  const carImage = carBox.image ?? loadedCarImage(carDef);
+  if (carImage) {
+    drawCarPhoto(ctx, x, y, laneHeight, color, racer, boostActive, carImage, carDef, carBox);
     return;
   }
 
-  const carWidth = Math.max(34, Math.min(68, laneHeight * 1.05)) * carDef.width * scale;
-  const carHeight = Math.max(12, Math.min(24, laneHeight * 0.36)) * carDef.height * scale;
+  const carWidth = carBox.width;
+  const carHeight = carBox.height;
   const wheelRadius = Math.max(3.4, carHeight * 0.27);
   const bodyX = x - carWidth / 2;
   const bodyY = y - carHeight / 2;
@@ -1007,21 +1074,22 @@ function drawCar(ctx, x, y, laneHeight, color, scale, racer, boostActive) {
   ctx.textAlign = "start";
 }
 
-function drawCarPhoto(ctx, x, y, laneHeight, color, scale, racer, boostActive, image, carDef) {
-  const drawHeight = Math.max(28, Math.min(64, laneHeight * 1.14)) * scale;
-  const drawWidth = drawHeight * (image.naturalWidth / image.naturalHeight) * (carDef.photoScale ?? 1);
+function drawCarPhoto(ctx, x, y, laneHeight, color, racer, boostActive, image, carDef, carBox) {
+  const drawHeight = carBox.height;
+  const drawWidth = carBox.width;
   const drawX = x - drawWidth / 2;
   const drawY = y - drawHeight / 2;
+  const flipX = carDef.flipInRace === true;
 
   ctx.save();
   ctx.shadowColor = boostActive ? "#fdba74" : color;
   ctx.shadowBlur = boostActive ? 28 : 13;
-  ctx.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  drawCarImage(ctx, image, drawX, drawY, drawWidth, drawHeight, flipX);
   ctx.restore();
 
   const badgeHeight = Math.max(12, Math.min(18, laneHeight * 0.28));
   const badgeWidth = badgeHeight * 1.72;
-  const badgeX = drawX + drawWidth * 0.16;
+  const badgeX = drawX + drawWidth * (flipX ? 0.6 : 0.16);
   const badgeY = y - drawHeight * 0.34;
 
   ctx.save();
@@ -1035,6 +1103,18 @@ function drawCarPhoto(ctx, x, y, laneHeight, color, scale, racer, boostActive, i
   ctx.fillText(String(racer.carNo), badgeX + badgeWidth / 2, badgeY + badgeHeight / 2);
   ctx.restore();
   ctx.textAlign = "start";
+}
+
+function drawCarImage(ctx, img, x, y, width, height, flipX) {
+  ctx.save();
+  if (flipX) {
+    ctx.translate(x + width, y);
+    ctx.scale(-1, 1);
+    ctx.drawImage(img, 0, 0, width, height);
+  } else {
+    ctx.drawImage(img, x, y, width, height);
+  }
+  ctx.restore();
 }
 
 function drawVehicleBody(ctx, x, y, width, height, radius, carDef) {
@@ -1132,11 +1212,11 @@ function renderResult() {
       <section class="result-hero">
         <div>
           <span>우승 자동차</span>
-          <strong>${winner ? `${carHash(winner)} ${escapeHtml(winner.name)}` : "-"}</strong>
+          <strong>${winner ? `${carHash(winner)} ${escapeHtml(carDisplayName(winner))}` : "-"}</strong>
         </div>
         <div class="buyer">
           <span>오늘의 음료수 담당</span>
-          <strong>${buyer ? `${carHash(buyer)} ${escapeHtml(buyer.name)}` : "-"}</strong>
+          <strong>${buyer ? `${carHash(buyer)} ${escapeHtml(carDisplayName(buyer))}` : "-"}</strong>
         </div>
       </section>
 
@@ -1146,7 +1226,7 @@ function renderResult() {
             (racer) => html`
               <article class="ranking-row ${racer.id === race?.drinkBuyerId ? "buyer-row" : ""}" style="--player-color: ${colorFor(racer)}">
                 <span class="rank">${carHash(racer)}</span>
-                <strong>${escapeHtml(racer.name)}</strong>
+                <strong>${escapeHtml(carDisplayName(racer))}</strong>
                 <span>${racer.finishTime?.toFixed(2) ?? "--"}s</span>
                 <em>${racer.id === race?.drinkBuyerId ? "음료수 담당" : racer.id === race?.winnerId ? "우승" : "완주"}</em>
               </article>
