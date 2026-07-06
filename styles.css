@@ -311,6 +311,13 @@ h1 {
   text-transform: uppercase;
 }
 
+.car-name {
+  color: #f8fafc;
+  font-size: 0.96rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
 .car-body {
   position: absolute;
   left: 50%;
@@ -361,24 +368,6 @@ h1 {
 
 .car-wheel.rear {
   left: calc(50% - 47px);
-}
-
-.player-card label {
-  display: grid;
-  gap: 6px;
-  color: #cbd5e1;
-  font-size: 0.82rem;
-  font-weight: 700;
-}
-
-.player-card input {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 7px;
-  min-height: 40px;
-  padding: 0 10px;
-  background: rgba(2, 6, 23, 0.58);
-  color: #f8fafc;
 }
 
 .bottom-action,
@@ -681,7 +670,7 @@ h1 {
   }
 
   .lobby-layout .player-card {
-    grid-template-rows: auto 34px auto auto auto;
+    grid-template-rows: auto 40px minmax(0, 1fr);
     gap: 2px;
     min-height: 0;
     padding: 4px;
@@ -705,25 +694,14 @@ h1 {
     line-height: 1;
   }
 
-  .lobby-layout .player-card label {
-    gap: 2px;
+  .lobby-layout .car-name {
+    align-self: center;
     font-size: 0.62rem;
-  }
-
-  .lobby-layout .player-card label span {
-    display: none;
-  }
-
-  .lobby-layout .player-card input {
-    min-height: 20px;
-    padding: 0 5px;
-    font-size: 0.64rem;
-  }
-
-  .lobby-layout .player-card .ghost-button.compact {
-    min-height: 22px;
-    padding: 0 6px;
-    font-size: 0.62rem;
+    line-height: 1.08;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .lobby-layout .bottom-action {

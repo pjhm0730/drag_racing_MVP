@@ -16,13 +16,13 @@
 - Restored wheel/touch vertical scrolling for the landscape Lobby when browser UI or small device height reduces the available viewport.
 - Removed the landscape body overflow lock and kept overflow hidden scoped to the Race screen, so Lobby can receive wheel/touch scroll.
 - Changed compact Lobby grid rows to keep a real minimum row height, which creates scrollable overflow instead of clipping card contents on very short landscape screens.
-- Reduced compact Lobby card height, spacing, badges, preview artwork, nickname inputs, and buttons for landscape use.
+- Reduced compact Lobby card height, spacing, badges, preview artwork, and fixed vehicle-name labels for landscape use.
 - Added 10 user-provided real car photo assets as `assets/cars/car-01.webp` through `assets/cars/car-10.webp`.
 - Cropped the provided source screenshots to vehicle-focused transparent WebP assets for Lobby cards and Race canvas rendering.
 - Updated `CAR_DEFS` to manage each car's `id`, real model name, image path, and accent color.
 - Changed Lobby behavior so all 10 cars are always visible; the 2/4/6/8/10 control now limits the maximum selected race cars.
 - Added max-selection locking so unselected cars show `마감` after the chosen limit is reached, while selected cars can still be deselected.
-- Fixed selected-car tracking to compute from all 10 cars, so non-contiguous choices such as Car #1, #2, #3, and #5 correctly carry into Launch and Race.
+- Fixed selected-car tracking to compute from all 10 cars, so non-contiguous choices such as `#1`, `#2`, `#3`, and `#5` correctly carry into Launch and Race.
 - Removed the Race screen right-side dashboard/progress list/status panel; Race now renders as a canvas-first full-screen view.
 - Converted the Race header to a small overlay so the canvas can occupy essentially the full viewport.
 - Reduced race car render size by roughly 15-25% and scaled exhaust/boost trails with lane height.
@@ -35,29 +35,33 @@
 - Added speed-based vehicle motion effects: small vertical vibration, fore/aft shake, wheel spin arc lines, road dust particles, and rear motion streaks.
 - Retuned race pacing so cars accelerate visibly within the first 1-2 seconds after GO and typical race results land around 8-10 seconds.
 - Added event-style race variance with launch quality, mid-race surge, short boost burst, and brief slowdown/recovery windows for more overtaking chances.
+- Removed Lobby nickname inputs, per-card random buttons, and the top name-reroll button; car cards now show fixed real vehicle names from `CAR_DEFS`.
+- Unified Launch, Race, and Result display names around real vehicle names only, with `#1` style numbers kept as compact badges.
+- Added the super boost system: each race picks 1 car 70% of the time or 2 cars 30% of the time.
+- Added `early` super boost and `late` comeback boost events with stronger speed advantage, glow, flame/trail, motion streaks, and `SUPER BOOST!` / `COMEBACK BOOST!` canvas labels.
 - Updated Race, Launch, and Result labels to prioritize actual vehicle names such as `싼타페`, `그랜저`, and `맥라렌 720S` instead of `Car #1` / `1번 자동차` style names.
 - Simplified the visible numbering system so users see compact fixed car numbers: `#1` through `#10`.
 - Kept `selectedOrder` only as internal selection tracking for lane assignment; pick order is no longer shown in Lobby, Launch, Canvas, or Result.
-- Reworded UI labels away from pick-order language and toward car identity language such as `Car #5` and `5번 자동차`.
+- Reworded UI labels away from pick-order language and toward fixed vehicle names plus compact `#5` style badges.
 - Reworked the Race screen for mobile landscape with a compact `100dvw x 100dvh` layout.
 - Made the race canvas resize to the stage size and device pixel ratio instead of relying on a fixed CSS canvas size.
 - Tuned lane height and canvas layout so 2 to 10 cars fit in landscape view.
 - Added moving road grid, road stripes, track markers, speed lines, exhaust trails, stronger boost glow, `BOOST!` canvas label, surge pulses, improved car rendering, headlights, tires, shadows, and a checkered finish line.
 - Confirmed the last-place car remains the drink buyer.
-- This status file includes the latest local race-direction, motion, and pacing update; check Git status for commit/push state.
+- This status file tracks updates through the fixed vehicle-name Lobby and super boost race system; changes are committed and pushed to GitHub on `main`.
 
 ## Implemented
 
 - Home, Lobby, Launch, Race, Result screen flow
 - Local mock lobby for 2 to 10 players
 - Player card click/touch selection and deselection
-- Single visible car number system using fixed `Car #1` through `Car #10`
+- Single visible car number badge system using fixed `#1` through `#10`
 - Selection tracking is internal only; the UI does not show pick order
 - Lobby always shows all 10 car cards
 - Maximum selected race cars can be set to 2, 4, 6, 8, or 10
 - Selection limit lock state for unselected cars after max selection is reached
 - Stable car identity colors based on fixed car number
-- Nickname editing and per-player/random-all nickname generation
+- Fixed real vehicle names from `CAR_DEFS`; no nickname editing or random-name generation
 - Responsive drag race canvas with 2 to 10 lanes
 - Compact mobile landscape race layout for 100dvw x 100dvh
 - Mobile landscape Lobby layout that fits 10 compact car cards as 5 columns x 2 rows
@@ -72,12 +76,19 @@
 - `assets/cars/car-01.webp` through `assets/cars/car-10.webp`
 - Reaction delay, acceleration, nitro, surge pulses, lane progress, finish ranking
 - Moving road stripes, track markers, speed lines, exhaust trails, boost glow, road dust, motion streaks, wheel spin arcs, and checkered finish line
-- Race variance events: launch quality, mid-race surge, short burst, and slowdown/recovery
+- Race variance events: launch quality, mid-race surge, short burst, slowdown/recovery, and 1-2 super boost cars per race
+- Super boost racer state fields: `superBoostType`, `superBoostStart`, `superBoostEnd`, `superBoostMultiplier`, and `isSuperBoosting`
 - Result screen showing winner and today's drink buyer as last place
 
 ## Verification
 
 - JavaScript syntax checked with `node --check src/app.js`.
+- Latest JavaScript syntax check passed after fixed vehicle-name Lobby and super boost changes.
+- Local VM smoke test confirmed Lobby HTML no longer contains `<input>`, `data-player-name`, `data-reroll`, or `random-all`, and that car cards render the fixed `.car-name` element.
+- Local VM smoke test confirmed selected racers no longer carry a user-editable `name` field.
+- Local VM tests for 2, 6, and 10 selected cars confirmed each race creates 1-2 super boost cars and includes the requested super boost state fields.
+- Local race-loop simulation for 2, 6, and 10 selected cars produced finishes around the 8-10 second target range, with some tail results slightly above 10 seconds depending on variance.
+- Browser verification for this update could not be completed because the browser automation policy blocked both `127.0.0.1` and local `file://` navigation for this workspace.
 - Static HTTP smoke test returned `200 text/html` for `index.html`.
 - Browser flow tested for 2, 4, 6, and 10 cars through Lobby, Launch, Race, and Result.
 - Browser Race checks retested for 2 selected cars, 5 selected cars, and 10 selected cars at mobile landscape `852 x 393`.
@@ -90,7 +101,7 @@
 - Browser visual retest confirmed boost flame, dust particles, and motion streaks render behind the cars on the left side.
 - Browser checks confirmed Launch labels no longer show old `Car #` / `1번 자동차` style names.
 - Mobile landscape viewport `852 x 393` tested with 10 cars: Lobby cards fit as 5 columns x 2 rows, all 10 car images loaded, and vertical overflow was `0`.
-- Max-select test at `852 x 393`: with max set to 4, selected Car #1, #2, #3, and #5; unselected cars locked, Car #6 click was blocked, and Launch showed exactly 4 selected cars.
+- Max-select test at `852 x 393`: with max set to 4, selected `#1`, `#2`, `#3`, and `#5`; unselected cars locked, `#6` click was blocked, and Launch showed exactly 4 selected cars.
 - Short mobile landscape viewport `852 x 320` tested with 10 cars: Lobby remained 5 columns x 2 rows and player-grid wheel scroll moved from `scrollTop 0` to `scrollTop 58`.
 - Mobile landscape viewport `852 x 393` tested for Race: canvas occupied the full viewport area, right dashboard DOM was absent, and vertical overflow was `0`.
 - Race visual check confirmed selected car photos render on canvas during countdown.

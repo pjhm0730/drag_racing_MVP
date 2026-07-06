@@ -174,32 +174,6 @@ const CAR_DEFS = [
   },
 ];
 
-const NICKNAME_PARTS = [
-  "터보",
-  "제로백",
-  "풀악셀",
-  "니트로",
-  "레드존",
-  "번아웃",
-  "피트인",
-  "런치",
-  "슬립",
-  "그립",
-];
-
-const NICKNAME_ENDINGS = [
-  "김대리",
-  "박과장",
-  "최차장",
-  "정프로",
-  "이매니저",
-  "한팀장",
-  "윤선임",
-  "오주임",
-  "강책임",
-  "서리더",
-];
-
 const DEFAULT_STATE = {
   screen: "home",
   playerCount: 6,
@@ -207,7 +181,6 @@ const DEFAULT_STATE = {
     id: `player-${index + 1}`,
     carNo: index + 1,
     carType: CAR_DEFS[index]?.id ?? CAR_DEFS[0].id,
-    name: CAR_DEFS[index]?.name ?? `자동차 #${index + 1}`,
     selectedOrder: null,
     reactionMs: 0,
     finishTime: null,
@@ -281,12 +254,6 @@ function carDisplayName(player) {
   return carDefFor(player).name;
 }
 
-function randomName(carNo) {
-  const left = NICKNAME_PARTS[(carNo + Math.floor(Math.random() * NICKNAME_PARTS.length)) % NICKNAME_PARTS.length];
-  const right = NICKNAME_ENDINGS[Math.floor(Math.random() * NICKNAME_ENDINGS.length)];
-  return `${left} ${right}`;
-}
-
 function setScreen(screen) {
   state.screen = screen;
   cancelRaceLoop();
@@ -325,55 +292,69 @@ function updatePlayerCount(count) {
   render();
 }
 
-function updatePlayerName(playerId, name) {
-  const player = state.players.find((candidate) => candidate.id === playerId);
-  if (!player) return;
-  player.name = name.trimStart().slice(0, 16);
-}
+function createRaceEvents(players) {
+  const superBoostCount = Math.min(players.length, Math.random() < 0.7 ? 1 : 2);
+  const shuffled = [...players].sort(() => Math.random() - 0.5);
+  const events = new Map();
 
-function rerollPlayerName(playerId) {
-  const player = state.players.find((candidate) => candidate.id === playerId);
-  if (!player) return;
-  player.name = randomName(player.carNo);
-  render();
-}
+  shuffled.slice(0, superBoostCount).forEach((player, index) => {
+    const type = superBoostCount === 2 ? (index === 0 ? "early" : "late") : Math.random() < 0.52 ? "early" : "late";
+    const early = type === "early";
+    const start = early ? 850 + Math.random() * 1450 : 0.6 + Math.random() * 0.18;
+    const duration = early ? 1050 + Math.random() * 650 : 0.14 + Math.random() * 0.08;
 
-function rerollVisibleNames() {
-  visiblePlayers().forEach((player) => {
-    player.name = randomName(player.carNo);
+    events.set(player.id, {
+      superBoostType: type,
+      superBoostStart: start,
+      superBoostEnd: early ? start + duration : Math.min(0.93, start + duration),
+      superBoostMultiplier: early ? 1.22 + Math.random() * 0.18 : 1.34 + Math.random() * 0.24,
+    });
   });
-  render();
+
+  return events;
 }
 
 function prepareRace() {
-  const racers = selectedPlayers().map((player, index) => ({
-    ...player,
-    lane: index,
-    reactionMs: Math.round(40 + Math.random() * 190),
-    acceleration: 0.000000048 + Math.random() * 0.000000026,
-    maxSpeed: 0.000084 + Math.random() * 0.000025,
-    launchQuality: -0.000008 + Math.random() * 0.000024,
-    nitroAt: 0.28 + Math.random() * 0.34,
-    nitroUsed: false,
-    boostStartedAt: null,
-    boostEndsAt: null,
-    boostLabelUntil: null,
-    surgeStartAt: 2600 + Math.random() * 3200,
-    surgeDuration: 900 + Math.random() * 900,
-    surgeStrength: 0.000009 + Math.random() * 0.000017,
-    burstStartAt: 4200 + Math.random() * 3600,
-    burstDuration: 420 + Math.random() * 460,
-    burstStrength: 0.000014 + Math.random() * 0.000019,
-    slowdownStartAt: 5200 + Math.random() * 3000,
-    slowdownDuration: 420 + Math.random() * 520,
-    slowdownStrength: 0.000005 + Math.random() * 0.000011,
-    surgePhase: Math.random() * Math.PI * 2,
-    surgeRate: 0.0018 + Math.random() * 0.0012,
-    progress: 0,
-    speed: 0,
-    finishTime: null,
-    finished: false,
-  }));
+  const selected = selectedPlayers();
+  const raceEvents = createRaceEvents(selected);
+  const racers = selected.map((player, index) => {
+    const superBoost = raceEvents.get(player.id);
+    return {
+      ...player,
+      lane: index,
+      reactionMs: Math.round(40 + Math.random() * 190),
+      acceleration: 0.000000056 + Math.random() * 0.00000003,
+      maxSpeed: 0.000097 + Math.random() * 0.000028,
+      launchQuality: -0.000008 + Math.random() * 0.000024,
+      nitroAt: 0.28 + Math.random() * 0.34,
+      nitroUsed: false,
+      boostStartedAt: null,
+      boostEndsAt: null,
+      boostLabelUntil: null,
+      superBoostType: superBoost?.superBoostType ?? null,
+      superBoostStart: superBoost?.superBoostStart ?? null,
+      superBoostEnd: superBoost?.superBoostEnd ?? null,
+      superBoostMultiplier: superBoost?.superBoostMultiplier ?? 1,
+      superBoostTriggeredAt: null,
+      superBoostLabelUntil: null,
+      isSuperBoosting: false,
+      surgeStartAt: 2600 + Math.random() * 3200,
+      surgeDuration: 900 + Math.random() * 900,
+      surgeStrength: 0.000009 + Math.random() * 0.000017,
+      burstStartAt: 4200 + Math.random() * 3600,
+      burstDuration: 420 + Math.random() * 460,
+      burstStrength: 0.000014 + Math.random() * 0.000019,
+      slowdownStartAt: 5200 + Math.random() * 3000,
+      slowdownDuration: 420 + Math.random() * 520,
+      slowdownStrength: 0.000005 + Math.random() * 0.000011,
+      surgePhase: Math.random() * Math.PI * 2,
+      surgeRate: 0.0018 + Math.random() * 0.0012,
+      progress: 0,
+      speed: 0,
+      finishTime: null,
+      finished: false,
+    };
+  });
 
   state.race = {
     status: "ready",
@@ -476,6 +457,14 @@ function tickRace(now) {
       racer.speed += 0.000029;
     }
 
+    const superBoostActive = isSuperBoostWindow(racer, elapsed);
+    if (superBoostActive && !racer.isSuperBoosting) {
+      racer.superBoostTriggeredAt = elapsed;
+      racer.superBoostLabelUntil = elapsed + (racer.superBoostType === "late" ? 1250 : 1050);
+      racer.speed += (racer.superBoostType === "late" ? 0.00004 : 0.000034) * racer.superBoostMultiplier;
+    }
+    racer.isSuperBoosting = superBoostActive;
+
     const boostActive = racer.boostEndsAt !== null && elapsed <= racer.boostEndsAt;
     const middleRaceSurge = racer.progress > 0.18 && racer.progress < 0.88;
     const launchKick = elapsed < 2400 ? racer.launchQuality * (1 - elapsed / 2400) : 0;
@@ -489,10 +478,14 @@ function tickRace(now) {
       racer.surgeStrength * surgeWindow +
       racer.burstStrength * burstWindow -
       racer.slowdownStrength * slowdownWindow;
-    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + eventSpeed + (boostActive ? 0.00004 : 0);
+    const superBoostBonus = superBoostActive
+      ? (racer.superBoostType === "late" ? 0.000052 : 0.000046) * racer.superBoostMultiplier
+      : 0;
+    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + eventSpeed + superBoostBonus + (boostActive ? 0.00004 : 0);
+    const superBoostAcceleration = superBoostActive ? racer.acceleration * frameMs * (racer.superBoostMultiplier - 0.5) : 0;
 
-    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.000062), racer.speed + racer.acceleration * frameMs);
-    racer.speed *= boostActive || burstWindow > 0 ? 0.999 : 0.997;
+    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.00007), racer.speed + racer.acceleration * frameMs + superBoostAcceleration);
+    racer.speed *= superBoostActive ? 1.0002 : boostActive || burstWindow > 0 ? 0.999 : 0.997;
     racer.progress = Math.min(1, racer.progress + racer.speed * frameMs);
 
     if (racer.progress >= 1) {
@@ -523,6 +516,18 @@ function eventPulse(elapsed, startAt, duration) {
   if (elapsed < startAt || elapsed > startAt + duration) return 0;
   const t = (elapsed - startAt) / duration;
   return Math.sin(t * Math.PI);
+}
+
+function isSuperBoostWindow(racer, elapsed) {
+  if (!racer.superBoostType || racer.superBoostStart === null || racer.superBoostEnd === null) return false;
+  if (racer.superBoostType === "early") {
+    return elapsed >= racer.superBoostStart && elapsed <= racer.superBoostEnd;
+  }
+  return racer.progress >= racer.superBoostStart && racer.progress <= racer.superBoostEnd;
+}
+
+function superBoostLabel(racer) {
+  return racer.superBoostType === "late" ? "COMEBACK BOOST!" : "SUPER BOOST!";
 }
 
 function html(strings, ...values) {
@@ -583,7 +588,6 @@ function renderLobby() {
           <p class="eyebrow">Mock Lobby</p>
           <h1>자동차 선택</h1>
         </div>
-        <button class="ghost-button compact" data-action="random-all">이름 다시 뽑기</button>
       </header>
 
       <section class="lobby-controls" aria-label="로비 설정">
@@ -621,22 +625,15 @@ function renderLobby() {
   `;
 
   app.querySelector("[data-action='home']").addEventListener("click", () => setScreen("home"));
-  app.querySelector("[data-action='random-all']").addEventListener("click", rerollVisibleNames);
   app.querySelector("[data-action='prepare']").addEventListener("click", prepareRace);
   app.querySelectorAll("[data-count]").forEach((button) => {
     button.addEventListener("click", () => updatePlayerCount(Number(button.dataset.count)));
   });
   app.querySelectorAll("[data-player-card]").forEach((card) => {
     card.addEventListener("click", (event) => {
-      if (event.target.closest("input, button")) return;
+      if (event.target.closest("button")) return;
       togglePlayer(card.dataset.playerCard);
     });
-  });
-  app.querySelectorAll("[data-player-name]").forEach((input) => {
-    input.addEventListener("input", () => updatePlayerName(input.dataset.playerName, input.value));
-  });
-  app.querySelectorAll("[data-reroll]").forEach((button) => {
-    button.addEventListener("click", () => rerollPlayerName(button.dataset.reroll));
   });
   wireCarPreviewFallbacks();
 }
@@ -670,12 +667,7 @@ function renderPlayerCard(player) {
           ${renderCarSvg(player, carDef)}
         </svg>
       </figure>
-      <div class="car-type">${escapeHtml(carDef.label)}</div>
-      <label>
-        <span>닉네임</span>
-        <input data-player-name="${player.id}" value="${escapeAttribute(player.name)}" maxlength="16" />
-      </label>
-      <button class="ghost-button compact" data-reroll="${player.id}">랜덤</button>
+      <strong class="car-name">${escapeHtml(carDisplayName(player))}</strong>
     </article>
   `;
 }
@@ -932,9 +924,12 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
   const laneLeft = Math.max(18, startX - labelWidth);
   const laneRight = finishX + 18;
   const boostActive = racer.boostEndsAt !== null && elapsedMs <= racer.boostEndsAt;
+  const superBoostActive = racer.isSuperBoosting === true;
+  const visualBoostActive = boostActive || superBoostActive;
   const boostAge = boostActive ? Math.max(0, elapsedMs - racer.boostStartedAt) : 0;
-  const boostPulse = boostActive ? Math.sin(boostAge / 36) * 2.4 : 0;
-  const carScale = boostActive ? 1.08 + Math.sin(boostAge / 48) * 0.05 : 1;
+  const superBoostAge = superBoostActive ? Math.max(0, elapsedMs - (racer.superBoostTriggeredAt ?? elapsedMs)) : 0;
+  const boostPulse = (boostActive ? Math.sin(boostAge / 36) * 2.4 : 0) + (superBoostActive ? Math.sin(superBoostAge / 28) * 4.4 : 0);
+  const carScale = superBoostActive ? 1.16 + Math.sin(superBoostAge / 42) * 0.06 : boostActive ? 1.08 + Math.sin(boostAge / 48) * 0.05 : 1;
   const carBox = raceCarDimensions(racer, laneHeight, carScale);
   const travelWidth = Math.max(0, finishX - startX - carBox.width);
   const carX = startX + carBox.width / 2 + travelWidth * racer.progress;
@@ -980,14 +975,24 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
 
   if (racer.speed > 0 && !racer.finished) {
     drawRoadDust(ctx, rearX, rearY, speedRatio, elapsedMs, laneHeight);
-    drawMotionStreaks(ctx, rearX, rearY, color, speedRatio, boostActive, laneHeight);
-    drawExhaust(ctx, rearX, rearY, color, racer.speed, boostActive, boostPulse, laneHeight);
+    drawMotionStreaks(ctx, rearX, rearY, color, speedRatio, boostActive, laneHeight, superBoostActive);
+    drawExhaust(ctx, rearX, rearY, color, racer.speed, boostActive, boostPulse, laneHeight, superBoostActive);
   }
 
-  drawCar(ctx, displayCarX, displayCarY, laneHeight, color, carScale, racer, boostActive, carBox);
+  drawCar(ctx, displayCarX, displayCarY, laneHeight, color, carScale, racer, visualBoostActive, carBox);
   drawWheelSpin(ctx, displayCarX, displayCarY, carBox, speedRatio, elapsedMs, laneHeight);
 
-  if (racer.boostLabelUntil !== null && elapsedMs <= racer.boostLabelUntil) {
+  if (racer.superBoostLabelUntil !== null && elapsedMs <= racer.superBoostLabelUntil) {
+    const labelAlpha = Math.max(0, (racer.superBoostLabelUntil - elapsedMs) / 1200);
+    ctx.save();
+    ctx.globalAlpha = labelAlpha;
+    ctx.fillStyle = racer.superBoostType === "late" ? "#67e8f9" : "#fef08a";
+    ctx.shadowColor = racer.superBoostType === "late" ? "#22d3ee" : "#f97316";
+    ctx.shadowBlur = 18;
+    ctx.font = `900 ${Math.max(13, Math.min(24, laneHeight * 0.4))}px system-ui`;
+    ctx.fillText(superBoostLabel(racer), Math.min(finishX - 154, displayCarX + carBox.width * 0.32), displayCarY - laneHeight * 0.28);
+    ctx.restore();
+  } else if (racer.boostLabelUntil !== null && elapsedMs <= racer.boostLabelUntil) {
     const labelAlpha = Math.max(0, (racer.boostLabelUntil - elapsedMs) / 900);
     ctx.save();
     ctx.globalAlpha = labelAlpha;
@@ -1016,18 +1021,18 @@ function drawRoadDust(ctx, rearX, y, speedRatio, elapsedMs, laneHeight) {
   ctx.restore();
 }
 
-function drawMotionStreaks(ctx, rearX, y, color, speedRatio, boostActive, laneHeight) {
+function drawMotionStreaks(ctx, rearX, y, color, speedRatio, boostActive, laneHeight, superBoostActive = false) {
   if (speedRatio <= 0.1) return;
 
-  const count = boostActive ? 5 : 3;
+  const count = superBoostActive ? 8 : boostActive ? 5 : 3;
   ctx.save();
   ctx.lineCap = "round";
   for (let i = 0; i < count; i += 1) {
-    const length = laneHeight * (0.75 + speedRatio * 1.35 + i * 0.28);
+    const length = laneHeight * ((superBoostActive ? 1.35 : 0.75) + speedRatio * (superBoostActive ? 2.35 : 1.35) + i * 0.28);
     const yy = y - laneHeight * 0.22 + i * laneHeight * 0.14;
-    ctx.strokeStyle = boostActive ? color : `rgba(226,232,240,${0.13 + speedRatio * 0.11})`;
-    ctx.globalAlpha = boostActive ? 0.35 : 0.42;
-    ctx.lineWidth = Math.max(1, laneHeight * (0.018 + i * 0.003));
+    ctx.strokeStyle = superBoostActive ? (i % 2 === 0 ? "#fef08a" : "#38bdf8") : boostActive ? color : `rgba(226,232,240,${0.13 + speedRatio * 0.11})`;
+    ctx.globalAlpha = superBoostActive ? 0.5 : boostActive ? 0.35 : 0.42;
+    ctx.lineWidth = Math.max(1, laneHeight * ((superBoostActive ? 0.024 : 0.018) + i * 0.003));
     ctx.beginPath();
     ctx.moveTo(rearX - 4, yy);
     ctx.lineTo(rearX - length, yy + Math.sin(i) * laneHeight * 0.03);
@@ -1058,18 +1063,19 @@ function drawWheelSpin(ctx, x, y, carBox, speedRatio, elapsedMs, laneHeight) {
   ctx.restore();
 }
 
-function drawExhaust(ctx, rearX, laneCenter, color, speed, boostActive, boostPulse, laneHeight) {
-  const trailLength = boostActive ? 82 + speed * 430000 : 30 + speed * 170000;
-  const flameHeight = boostActive ? Math.max(7, laneHeight * 0.22) : Math.max(3, laneHeight * 0.11);
+function drawExhaust(ctx, rearX, laneCenter, color, speed, boostActive, boostPulse, laneHeight, superBoostActive = false) {
+  const trailLength = superBoostActive ? 128 + speed * 680000 : boostActive ? 82 + speed * 430000 : 30 + speed * 170000;
+  const flameHeight = superBoostActive ? Math.max(10, laneHeight * 0.34) : boostActive ? Math.max(7, laneHeight * 0.22) : Math.max(3, laneHeight * 0.11);
   const gradient = ctx.createLinearGradient(rearX - trailLength, laneCenter, rearX, laneCenter);
-  gradient.addColorStop(0, "rgba(249, 115, 22, 0)");
-  gradient.addColorStop(0.3, boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
-  gradient.addColorStop(1, boostActive ? color : "rgba(226,232,240,0.32)");
+  gradient.addColorStop(0, superBoostActive ? "rgba(56, 189, 248, 0)" : "rgba(249, 115, 22, 0)");
+  gradient.addColorStop(0.24, superBoostActive ? "rgba(56, 189, 248, 0.42)" : boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
+  gradient.addColorStop(0.62, superBoostActive ? "rgba(254, 240, 138, 0.48)" : boostActive ? "rgba(249, 115, 22, 0.35)" : "rgba(148, 163, 184, 0.18)");
+  gradient.addColorStop(1, superBoostActive ? "#fef08a" : boostActive ? color : "rgba(226,232,240,0.32)");
 
   ctx.save();
   ctx.fillStyle = gradient;
-  ctx.shadowColor = boostActive ? "#fb923c" : color;
-  ctx.shadowBlur = boostActive ? 26 : 10;
+  ctx.shadowColor = superBoostActive ? "#facc15" : boostActive ? "#fb923c" : color;
+  ctx.shadowBlur = superBoostActive ? 42 : boostActive ? 26 : 10;
   ctx.beginPath();
   ctx.moveTo(rearX, laneCenter - flameHeight * 0.45);
   ctx.lineTo(rearX - trailLength, laneCenter - flameHeight + boostPulse);
