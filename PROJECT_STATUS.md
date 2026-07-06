@@ -28,8 +28,13 @@
 - Reduced race car render size by roughly 15-25% and scaled exhaust/boost trails with lane height.
 - Race canvas now draws the loaded WebP car photos first and keeps dependency-free vector drawings as image-load fallback.
 - Added `flipInRace` vehicle metadata and a `drawCarImage(..., flipX)` canvas helper so Race-only car photos face the right-side FINISH direction.
+- Re-audited all `assets/cars/car-01.webp` through `assets/cars/car-10.webp` for Race direction; Car #4 Sorento now uses `flipInRace: false`, while the other race photos keep `flipInRace: true`.
 - Adjusted boost/exhaust origin to the left rear of the right-facing car image.
+- Aligned Race car number badges toward the front/right side of the right-facing car sprites.
 - Replaced the dark abstract Race background with a 2D asphalt drag strip: road texture, white lane dividers, guardrails, grass edges, START line, and checkered FINISH line.
+- Added speed-based vehicle motion effects: small vertical vibration, fore/aft shake, wheel spin arc lines, road dust particles, and rear motion streaks.
+- Retuned race pacing so cars accelerate visibly within the first 1-2 seconds after GO and typical race results land around 8-10 seconds.
+- Added event-style race variance with launch quality, mid-race surge, short boost burst, and brief slowdown/recovery windows for more overtaking chances.
 - Updated Race, Launch, and Result labels to prioritize actual vehicle names such as `싼타페`, `그랜저`, and `맥라렌 720S` instead of `Car #1` / `1번 자동차` style names.
 - Simplified the visible numbering system so users see compact fixed car numbers: `#1` through `#10`.
 - Kept `selectedOrder` only as internal selection tracking for lane assignment; pick order is no longer shown in Lobby, Launch, Canvas, or Result.
@@ -39,7 +44,7 @@
 - Tuned lane height and canvas layout so 2 to 10 cars fit in landscape view.
 - Added moving road grid, road stripes, track markers, speed lines, exhaust trails, stronger boost glow, `BOOST!` canvas label, surge pulses, improved car rendering, headlights, tires, shadows, and a checkered finish line.
 - Confirmed the last-place car remains the drink buyer.
-- Changes were committed and pushed to GitHub on `main`.
+- This status file includes the latest local race-direction, motion, and pacing update; check Git status for commit/push state.
 
 ## Implemented
 
@@ -66,7 +71,8 @@
 - Actual vehicle model names displayed in Launch, Race lane labels, and Result
 - `assets/cars/car-01.webp` through `assets/cars/car-10.webp`
 - Reaction delay, acceleration, nitro, surge pulses, lane progress, finish ranking
-- Moving road stripes, track markers, speed lines, exhaust trails, boost glow, and checkered finish line
+- Moving road stripes, track markers, speed lines, exhaust trails, boost glow, road dust, motion streaks, wheel spin arcs, and checkered finish line
+- Race variance events: launch quality, mid-race surge, short burst, and slowdown/recovery
 - Result screen showing winner and today's drink buyer as last place
 
 ## Verification
@@ -76,7 +82,12 @@
 - Browser flow tested for 2, 4, 6, and 10 cars through Lobby, Launch, Race, and Result.
 - Browser Race checks retested for 2 selected cars, 5 selected cars, and 10 selected cars at mobile landscape `852 x 393`.
 - Race visual check confirmed car photos face right toward FINISH and remain centered inside their lanes.
+- Race direction recheck confirmed Car #4 Sorento faces right toward FINISH after changing its Race-only `flipInRace` value.
 - Boost visual check confirmed flame/trail renders from the left rear of the right-facing car.
+- Final mobile landscape `852 x 393` Race visual check confirmed 10 cars fit inside the canvas with no vertical overflow.
+- Final mobile visual check confirmed the car number badge stays aligned with the right-facing sprites.
+- Browser timing retest at `852 x 393`: 4-car race finished from `8.43s` to `9.11s`, 6-car race from `8.01s` to `9.59s`, and 10-car race from `8.03s` to `9.84s`.
+- Browser visual retest confirmed boost flame, dust particles, and motion streaks render behind the cars on the left side.
 - Browser checks confirmed Launch labels no longer show old `Car #` / `1번 자동차` style names.
 - Mobile landscape viewport `852 x 393` tested with 10 cars: Lobby cards fit as 5 columns x 2 rows, all 10 car images loaded, and vertical overflow was `0`.
 - Max-select test at `852 x 393`: with max set to 4, selected Car #1, #2, #3, and #5; unselected cars locked, Car #6 click was blocked, and Launch showed exactly 4 selected cars.
@@ -92,7 +103,6 @@
 
 ## Known Follow-ups
 
-- Tune race pacing after real mobile landscape testing.
 - Add sound and visual countdown effects.
 - Add result share image or QR-friendly result view.
 - Add real multiplayer only if office usage needs multiple phones.

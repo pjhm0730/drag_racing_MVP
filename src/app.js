@@ -65,7 +65,7 @@ const CAR_DEFS = [
     name: "쏘렌토",
     label: "2026 쏘렌토",
     image: "./assets/cars/car-04.webp",
-    flipInRace: true,
+    flipInRace: false,
     color: "#f1f5f9",
     width: 1.08,
     height: 1.06,
@@ -349,16 +349,26 @@ function prepareRace() {
   const racers = selectedPlayers().map((player, index) => ({
     ...player,
     lane: index,
-    reactionMs: Math.round(150 + Math.random() * 560),
-    acceleration: 0.000000016 + Math.random() * 0.000000015,
-    maxSpeed: 0.000116 + Math.random() * 0.000037,
-    nitroAt: 0.34 + Math.random() * 0.34,
+    reactionMs: Math.round(40 + Math.random() * 190),
+    acceleration: 0.000000048 + Math.random() * 0.000000026,
+    maxSpeed: 0.000084 + Math.random() * 0.000025,
+    launchQuality: -0.000008 + Math.random() * 0.000024,
+    nitroAt: 0.28 + Math.random() * 0.34,
     nitroUsed: false,
     boostStartedAt: null,
     boostEndsAt: null,
     boostLabelUntil: null,
+    surgeStartAt: 2600 + Math.random() * 3200,
+    surgeDuration: 900 + Math.random() * 900,
+    surgeStrength: 0.000009 + Math.random() * 0.000017,
+    burstStartAt: 4200 + Math.random() * 3600,
+    burstDuration: 420 + Math.random() * 460,
+    burstStrength: 0.000014 + Math.random() * 0.000019,
+    slowdownStartAt: 5200 + Math.random() * 3000,
+    slowdownDuration: 420 + Math.random() * 520,
+    slowdownStrength: 0.000005 + Math.random() * 0.000011,
     surgePhase: Math.random() * Math.PI * 2,
-    surgeRate: 0.0012 + Math.random() * 0.0009,
+    surgeRate: 0.0018 + Math.random() * 0.0012,
     progress: 0,
     speed: 0,
     finishTime: null,
@@ -461,19 +471,28 @@ function tickRace(now) {
     if (!racer.nitroUsed && racer.progress >= racer.nitroAt) {
       racer.nitroUsed = true;
       racer.boostStartedAt = elapsed;
-      racer.boostEndsAt = elapsed + 850 + Math.random() * 560;
-      racer.boostLabelUntil = elapsed + 900;
-      racer.speed += 0.000045;
+      racer.boostEndsAt = elapsed + 640 + Math.random() * 520;
+      racer.boostLabelUntil = elapsed + 760;
+      racer.speed += 0.000029;
     }
 
     const boostActive = racer.boostEndsAt !== null && elapsed <= racer.boostEndsAt;
     const middleRaceSurge = racer.progress > 0.18 && racer.progress < 0.88;
-    const surgeWave = middleRaceSurge ? Math.sin(elapsed * racer.surgeRate + racer.surgePhase) * 0.000012 : 0;
-    const tractionNoise = Math.sin(elapsed * 0.0034 + racer.carNo * 1.7) * 0.000004;
-    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + (boostActive ? 0.000075 : 0);
+    const launchKick = elapsed < 2400 ? racer.launchQuality * (1 - elapsed / 2400) : 0;
+    const surgeWindow = eventPulse(elapsed, racer.surgeStartAt, racer.surgeDuration);
+    const burstWindow = eventPulse(elapsed, racer.burstStartAt, racer.burstDuration);
+    const slowdownWindow = eventPulse(elapsed, racer.slowdownStartAt, racer.slowdownDuration);
+    const surgeWave = middleRaceSurge ? Math.sin(elapsed * racer.surgeRate + racer.surgePhase) * 0.00001 : 0;
+    const tractionNoise = Math.sin(elapsed * 0.0046 + racer.carNo * 1.7) * 0.000006;
+    const eventSpeed =
+      launchKick +
+      racer.surgeStrength * surgeWindow +
+      racer.burstStrength * burstWindow -
+      racer.slowdownStrength * slowdownWindow;
+    const targetMaxSpeed = racer.maxSpeed + surgeWave + tractionNoise + eventSpeed + (boostActive ? 0.00004 : 0);
 
-    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.000076), racer.speed + racer.acceleration * frameMs);
-    racer.speed *= boostActive ? 0.999 : 0.994;
+    racer.speed = Math.min(Math.max(targetMaxSpeed, 0.000062), racer.speed + racer.acceleration * frameMs);
+    racer.speed *= boostActive || burstWindow > 0 ? 0.999 : 0.997;
     racer.progress = Math.min(1, racer.progress + racer.speed * frameMs);
 
     if (racer.progress >= 1) {
@@ -486,7 +505,7 @@ function tickRace(now) {
   drawRaceCanvas(now);
 
   const allFinished = race.racers.every((racer) => racer.finished);
-  if (allFinished || elapsed > 17000) {
+  if (allFinished || elapsed > 13800) {
     race.racers.forEach((racer) => {
       if (racer.finishTime === null) {
         racer.finishTime = elapsed / 1000 + (1 - racer.progress);
@@ -498,6 +517,12 @@ function tickRace(now) {
   }
 
   animationFrameId = requestAnimationFrame(tickRace);
+}
+
+function eventPulse(elapsed, startAt, duration) {
+  if (elapsed < startAt || elapsed > startAt + duration) return 0;
+  const t = (elapsed - startAt) / duration;
+  return Math.sin(t * Math.PI);
 }
 
 function html(strings, ...values) {
@@ -913,8 +938,13 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
   const carBox = raceCarDimensions(racer, laneHeight, carScale);
   const travelWidth = Math.max(0, finishX - startX - carBox.width);
   const carX = startX + carBox.width / 2 + travelWidth * racer.progress;
-  const displayCarX = carX + boostPulse;
+  const speedRatio = Math.min(1.35, Math.max(0, racer.speed / 0.00017));
+  const vibration = Math.sin(elapsedMs * 0.052 + racer.carNo * 1.9) * Math.min(3.2, speedRatio * 2.15);
+  const foreAftShake = Math.sin(elapsedMs * 0.033 + racer.carNo) * Math.min(2.4, speedRatio * 1.6);
+  const displayCarX = carX + boostPulse + foreAftShake;
+  const displayCarY = laneCenter + vibration;
   const rearX = displayCarX - carBox.width * 0.43;
+  const rearY = displayCarY + Math.min(2, laneHeight * 0.04);
   const compactLane = laneHeight < 34;
   const carDef = carDefFor(racer);
 
@@ -949,10 +979,13 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
   }
 
   if (racer.speed > 0 && !racer.finished) {
-    drawExhaust(ctx, rearX, laneCenter, color, racer.speed, boostActive, boostPulse, laneHeight);
+    drawRoadDust(ctx, rearX, rearY, speedRatio, elapsedMs, laneHeight);
+    drawMotionStreaks(ctx, rearX, rearY, color, speedRatio, boostActive, laneHeight);
+    drawExhaust(ctx, rearX, rearY, color, racer.speed, boostActive, boostPulse, laneHeight);
   }
 
-  drawCar(ctx, displayCarX, laneCenter, laneHeight, color, carScale, racer, boostActive, carBox);
+  drawCar(ctx, displayCarX, displayCarY, laneHeight, color, carScale, racer, boostActive, carBox);
+  drawWheelSpin(ctx, displayCarX, displayCarY, carBox, speedRatio, elapsedMs, laneHeight);
 
   if (racer.boostLabelUntil !== null && elapsedMs <= racer.boostLabelUntil) {
     const labelAlpha = Math.max(0, (racer.boostLabelUntil - elapsedMs) / 900);
@@ -960,9 +993,69 @@ function drawLane(ctx, racer, index, y, laneHeight, startX, finishX, labelWidth,
     ctx.globalAlpha = labelAlpha;
     ctx.fillStyle = "#fdba74";
     ctx.font = `900 ${Math.max(12, Math.min(22, laneHeight * 0.36))}px system-ui`;
-    ctx.fillText("BOOST!", Math.min(finishX - 86, displayCarX + carBox.width * 0.34), laneCenter - laneHeight * 0.25);
+    ctx.fillText("BOOST!", Math.min(finishX - 86, displayCarX + carBox.width * 0.34), displayCarY - laneHeight * 0.25);
     ctx.restore();
   }
+}
+
+function drawRoadDust(ctx, rearX, y, speedRatio, elapsedMs, laneHeight) {
+  if (speedRatio <= 0.08) return;
+
+  ctx.save();
+  const particleCount = Math.min(7, Math.max(2, Math.round(speedRatio * 5)));
+  for (let i = 0; i < particleCount; i += 1) {
+    const drift = (elapsedMs * (0.018 + i * 0.004) + i * 23) % Math.max(24, laneHeight * 1.6);
+    const x = rearX - 8 - drift - i * 8;
+    const yy = y + laneHeight * 0.23 + Math.sin(elapsedMs * 0.01 + i) * laneHeight * 0.08;
+    const radius = Math.max(1, laneHeight * (0.025 + i * 0.003));
+    ctx.fillStyle = `rgba(203, 213, 225, ${Math.max(0.04, 0.2 - i * 0.022) * speedRatio})`;
+    ctx.beginPath();
+    ctx.arc(x, yy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawMotionStreaks(ctx, rearX, y, color, speedRatio, boostActive, laneHeight) {
+  if (speedRatio <= 0.1) return;
+
+  const count = boostActive ? 5 : 3;
+  ctx.save();
+  ctx.lineCap = "round";
+  for (let i = 0; i < count; i += 1) {
+    const length = laneHeight * (0.75 + speedRatio * 1.35 + i * 0.28);
+    const yy = y - laneHeight * 0.22 + i * laneHeight * 0.14;
+    ctx.strokeStyle = boostActive ? color : `rgba(226,232,240,${0.13 + speedRatio * 0.11})`;
+    ctx.globalAlpha = boostActive ? 0.35 : 0.42;
+    ctx.lineWidth = Math.max(1, laneHeight * (0.018 + i * 0.003));
+    ctx.beginPath();
+    ctx.moveTo(rearX - 4, yy);
+    ctx.lineTo(rearX - length, yy + Math.sin(i) * laneHeight * 0.03);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawWheelSpin(ctx, x, y, carBox, speedRatio, elapsedMs, laneHeight) {
+  if (speedRatio <= 0.1) return;
+
+  const wheelY = y + carBox.height * 0.31;
+  const wheelRadius = Math.max(4, Math.min(11, carBox.height * 0.18));
+  const wheelXs = [x - carBox.width * 0.29, x + carBox.width * 0.29];
+  const spin = elapsedMs * 0.02 * (0.7 + speedRatio);
+
+  ctx.save();
+  ctx.strokeStyle = `rgba(248,250,252,${Math.min(0.72, 0.28 + speedRatio * 0.28)})`;
+  ctx.lineWidth = Math.max(1, laneHeight * 0.018);
+  wheelXs.forEach((wheelX, index) => {
+    for (let arc = 0; arc < 2; arc += 1) {
+      const start = spin + index + arc * Math.PI;
+      ctx.beginPath();
+      ctx.arc(wheelX, wheelY, wheelRadius + arc * 2, start, start + Math.PI * 0.72);
+      ctx.stroke();
+    }
+  });
+  ctx.restore();
 }
 
 function drawExhaust(ctx, rearX, laneCenter, color, speed, boostActive, boostPulse, laneHeight) {
@@ -1089,7 +1182,7 @@ function drawCarPhoto(ctx, x, y, laneHeight, color, racer, boostActive, image, c
 
   const badgeHeight = Math.max(12, Math.min(18, laneHeight * 0.28));
   const badgeWidth = badgeHeight * 1.72;
-  const badgeX = drawX + drawWidth * (flipX ? 0.6 : 0.16);
+  const badgeX = drawX + drawWidth * 0.6;
   const badgeY = y - drawHeight * 0.34;
 
   ctx.save();
